@@ -15,6 +15,7 @@
 | `config` | The field's config after dependencies, access and language |
 | `field` | react-hook-form's `field` (`name`, `value`, `onChange`, `onBlur`, `ref`) |
 | `fieldState` | react-hook-form's `fieldState` (`invalid`, `error`, …) |
+| `control` | The form's control, for a field that keeps its value in more than one form field: `useController({ control, name })` binds another |
 | `id` | The element id, with the form's `idScope` |
 | `inline` | `true` when drawn inside another field's box |
 | `disabled`, `required` | Resolved flags: the config's and the form's |

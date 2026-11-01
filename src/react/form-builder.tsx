@@ -90,6 +90,7 @@ const FieldController = memo(function FieldController({
           config={config}
           field={field}
           fieldState={fieldState}
+          control={control}
           id={id}
           inline={inline}
           disabled={Boolean(config.disabled || field.disabled)}

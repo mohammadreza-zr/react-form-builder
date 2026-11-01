@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { useForm } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { type FormFieldConfig, FormBuilder, FormBuilderProvider } from "../src/index.js";
+import { type FieldProps, type FormFieldConfig, FormBuilder, FormBuilderProvider } from "../src/index.js";
 import { plainComponents } from "../src/plain/index.js";
 import { type Values, mount, type, unmount } from "./harness.js";
 
@@ -246,5 +246,31 @@ describe("options from a provider", () => {
       components: { ...plainComponents, fallback: ({ type }) => <i>no {type}</i> },
     });
     expect(withFallback.el.textContent).toBe("no plate");
+  });
+});
+
+describe("the form's control", () => {
+  it("lets a component bind a second form field", async () => {
+    const { useController } = await import("react-hook-form");
+    function Pair({ config, field, control }: FieldProps<{ label?: string }>) {
+      const other = useController({ control, name: "other" });
+      return (
+        <button
+          type="button"
+          data-slot="pair"
+          onClick={() => {
+            field.onChange("main");
+            other.field.onChange("second");
+          }}
+        >
+          {config.label}
+        </button>
+      );
+    }
+    const { el, form } = await mount([{ type: "pair", name: "main", label: "Pair" } as never], {}, {
+      components: { ...plainComponents, fields: { ...plainComponents.fields, pair: Pair } as never },
+    });
+    await act(async () => el.querySelector<HTMLElement>("[data-slot=pair]")!.click());
+    expect(form.getValues()).toEqual({ main: "main", other: "second" });
   });
 });

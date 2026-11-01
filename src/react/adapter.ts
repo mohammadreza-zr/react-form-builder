@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import type {
+  Control,
   ControllerFieldState,
   ControllerRenderProps,
   FieldValues,
@@ -34,6 +35,11 @@ export type FieldProps<
   /** react-hook-form's binding of the field. */
   field: ControllerRenderProps<T, Path<T>>;
   fieldState: ControllerFieldState;
+  /**
+   * The form's control, for a field whose value is kept in more than one form
+   * field: `useController({ control, name })` binds another.
+   */
+  control: Control<T>;
   /** The element id, with the form's `idScope`. */
   id: string;
   /** `true` when drawn inside another field's box. */
