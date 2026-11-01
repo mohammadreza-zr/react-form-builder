@@ -11,8 +11,8 @@ import type {
   FieldExtras,
   FieldConfigForType,
   FormFieldConfig,
+  FormFieldConfigByType,
   FormFieldType,
-  GroupField,
 } from "./config.js";
 
 /** Draws fields inside a field or a group, through the same pipeline as the form. */
@@ -73,7 +73,7 @@ export type GroupProps<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
 > = {
-  config: GroupField<T, X>;
+  config: FormFieldConfigByType<T, X>["group"];
   /** The group's fields, drawn by the builder (inline when the config says so). */
   children: ReactNode;
 };
