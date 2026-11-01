@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { useForm } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { type FormFieldConfig, FormBuilder, FormBuilderProvider } from "../src/index.js";
@@ -109,11 +111,39 @@ describe("access and language", () => {
     expect(form.getValues("secret")).toBe("kept?");
   });
 
-  it("resets a denied field to its default", async () => {
-    const { form } = await mount(fields, { secret: "x" }, { can: (p) => p !== "secret.read", locale: "en" });
-    form.reset({ secret: "x" });
-    await act(async () => {});
-    expect(form.getValues("secret")).toBe("x");
+  it("puts a field the user loses access to back to its default", async () => {
+    let revoke!: () => void;
+    let setValue!: (name: string, value: unknown) => void;
+    function Harness() {
+      const [allowed, setAllowed] = useState(true);
+      const form = useForm<Values>({ defaultValues: { secret: "default" } });
+      revoke = () => setAllowed(false);
+      setValue = form.setValue as never;
+      valueOf = () => form.getValues("secret");
+      return (
+        <FormBuilder
+          components={plainComponents}
+          control={form.control}
+          setValue={form.setValue}
+          locale="en"
+          can={allowed ? () => true : () => false}
+          fields={[{ type: "text", name: "secret", label: "Secret", permission: "secret.read" }]}
+        />
+      );
+    }
+    let valueOf!: () => unknown;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    await act(async () => root.render(<Harness />));
+    await act(async () => setValue("secret", "typed"));
+    expect(valueOf()).toBe("typed");
+
+    await act(async () => revoke());
+    expect(host.textContent).not.toContain("Secret");
+    expect(valueOf()).toBe("default");
+    act(() => root.unmount());
+    host.remove();
   });
 
   it("allows everything when no check is given", async () => {
@@ -169,6 +199,15 @@ describe("layout", () => {
     expect(el.querySelector("label")!.htmlFor).toBe("dialog-a");
   });
 
+  it("keeps the scope of the form a group is drawn in", async () => {
+    const { el } = await mount(
+      [{ type: "group", fields: [{ type: "text", name: "inner", label: "Inner" }] }],
+      {},
+      { idScope: "dialog" },
+    );
+    expect(input(el, "inner").id).toBe("dialog-inner");
+  });
+
   it("shows the error of a field", async () => {
     const { el, form } = await mount([{ type: "text", name: "a", label: "A" }]);
     await act(async () => form.setError("a", { message: "Too short" }));
@@ -179,8 +218,6 @@ describe("layout", () => {
 
 describe("options from a provider", () => {
   it("reaches the builders a group draws", async () => {
-    const { createRoot } = await import("react-dom/client");
-    const { useForm } = await import("react-hook-form");
     function Harness() {
       const { control } = useForm<Values>();
       return (

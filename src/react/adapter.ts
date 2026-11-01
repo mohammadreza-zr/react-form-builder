@@ -41,9 +41,27 @@ export type FieldProps<
   /** The config's `disabled` or the form's. */
   disabled: boolean;
   required: boolean;
-  /** For fields that nest others (a segmented field's trailing slot). */
-  renderFields: RenderFields<T, X>;
+  /**
+   * For fields that nest others (a segmented field's trailing slot). Declared
+   * as a method so a component written for one set of extras can be placed in
+   * a set with more.
+   */
+  renderFields(
+    fields: FormFieldConfig<T, X>[],
+    options?: { inline?: boolean },
+  ): ReactNode;
 };
+
+/**
+ * The props of the component for the field type `K`, with the config of that
+ * type: `FieldPropsOf<"text", Extras>` is what a `text` component receives
+ * once an adapter has added `Extras` to the field types.
+ */
+export type FieldPropsOf<
+  K extends string,
+  X extends FieldExtras = {},
+  T extends FieldValues = FieldValues,
+> = FieldProps<FieldConfigForType<T, K & FormFieldType<X>, X>, T, X>;
 
 export type GroupProps<
   T extends FieldValues = FieldValues,

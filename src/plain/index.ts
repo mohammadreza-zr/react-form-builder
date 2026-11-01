@@ -23,7 +23,7 @@ export * from "./inputs.js";
 export * from "./layout.js";
 
 /** Native HTML for every field type of the package, for docs and tests. */
-export const plainComponents: FormComponents<any, {}> = {
+export const plainComponents: FormComponents<any, any> = {
   fields: {
     text: PlainInput,
     number: PlainInput,
