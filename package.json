@@ -1,0 +1,37 @@
+{
+  "name": "@mrzr/react-form-builder",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Build a React form from a config, with react-hook-form: fields that show, hide, disable and fill each other, and your own components for the look.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "npm run build && vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-hook-form": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-hook-form": "^7.60.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.0"
+  }
+}
