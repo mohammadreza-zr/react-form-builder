@@ -63,7 +63,7 @@ export const components: FormComponents<FieldValues, Extras> = {
 };
 ```
 
-Give the extras to the fields too: `FormFieldConfig<Values, Extras>[]`. `FormBuilder` does not infer them from `fields`, so a list typed as `FormFieldConfig<Values>[]` does not accept `icon`. A field of a type the extras add, such as `rating`, takes the keys of every field plus its own.
+An extra key cannot depend on the form's values, so one that names another field (a `Path<T>` in your types) is typed as a plain string. Give the extras to the fields too: `FormFieldConfig<Values, Extras>[]`. `FormBuilder` does not infer them from `fields`, so a list typed as `FormFieldConfig<Values>[]` does not accept `icon`. A field of a type the extras add, such as `rating`, takes the keys of every field plus its own.
 
 ## One set of options for many forms
 
