@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- A component written for its own extras now fits a `FormComponents` whose extras add more field types. The nested lists in a component's props — a group's `fields`, an array's row fields, a segmented field's `trailing`, and what `renderFields` takes — are typed as `NestedFields` (any extras), and a group's or array's config reads only its own entry of the extras. Before, assigning such components to `FormComponents<T, AllExtras>` failed to type-check.
+- `build` clears `dist` first, so a deleted source file is not published.
+- Examples for your own `useForm`, zod, languages and permissions, and shadcn/ui, all compiled and run by the tests.
+
 ## 0.1.0 - 2026-11-02
 
 First release.

@@ -6,7 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   type FieldPropsOf,
+  type FormComponents,
   type FormFieldConfig,
+  type GroupProps,
   type TextField,
   type WrapperProps,
   Form,
@@ -323,6 +325,20 @@ describe("createFormBuilder", () => {
     expect(field(el, "count").type).toBe("number");
     await submit(el);
     expect(alerts(el)).toEqual(["Fill in Name."]);
+  });
+
+  it("places components written for their own extras in a set with more", () => {
+    type SegmentedExtras = { segmented: { tone?: string } };
+    type GroupExtras = { group: { variant?: "card" | "box" } };
+    type AllExtras = SegmentedExtras & GroupExtras & { rating: { max: number }; text: { icon?: string } };
+    function Segmented({ config, renderFields }: FieldPropsOf<"segmented", SegmentedExtras>) {
+      return <>{config.trailing ? renderFields(config.trailing, { inline: true }) : config.tone}</>;
+    }
+    function Group({ config, children }: GroupProps<Values, GroupExtras>) {
+      return <section data-variant={config.variant}>{children}</section>;
+    }
+    const components: FormComponents<Values, AllExtras> = { fields: { segmented: Segmented }, group: Group };
+    expect(components.group).toBe(Group);
   });
 
   it("types the keys a component adds", () => {

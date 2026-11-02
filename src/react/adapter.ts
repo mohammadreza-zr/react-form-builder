@@ -9,19 +9,43 @@ import type {
 
 import type { FieldOption } from "../core/types.js";
 import type {
+  ArrayField,
   FieldExtras,
   FieldConfigForType,
   FormFieldConfig,
-  FormFieldConfigByType,
   FormFieldType,
+  GroupField,
 } from "./config.js";
+
+/**
+ * Fields a config nests — a group's `fields`, an array's row fields, a
+ * segmented field's `trailing` — as a component sees them. A component hands
+ * them back to `renderFields` and does not read their types, so they are typed
+ * with any extras: a component written for its own extras then fits a project
+ * whose extras add more field types.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+export type NestedFields<T extends FieldValues = FieldValues> = FormFieldConfig<T, any>[];
+
+/** A config with its nested lists typed as `NestedFields`. */
+export type WithNestedFields<C, T extends FieldValues = FieldValues> = 0 extends 1 & C
+  ? C
+  : C extends unknown
+  ? Omit<C, "fields" | "trailing"> &
+      ("fields" extends keyof C ? { fields: NestedFields<T> } : unknown) &
+      ("trailing" extends keyof C ? { trailing?: NestedFields<T> } : unknown)
+  : never;
+
+/** The keys `X` adds to the field type `K`. */
+type ExtrasFor<X, K extends string> = K extends keyof X ? X[K] : unknown;
 
 /** Draws fields inside a field or a group, through the same pipeline as the form. */
 export type RenderFields<
   T extends FieldValues = FieldValues,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for the call sites
   X extends FieldExtras = {},
 > = (
-  fields: FormFieldConfig<T, X>[],
+  fields: NestedFields<T>,
   options?: { inline?: boolean; columns?: number },
 ) => ReactNode;
 
@@ -81,13 +105,9 @@ export type FieldProps<
   optionsState: OptionsState;
   /** The field's place in the layout; set only when no wrapper draws it. */
   style?: CSSProperties;
-  /**
-   * For fields that nest others (a segmented field's trailing slot). Declared
-   * as a method so a component written for one set of extras can be placed in
-   * a set with more.
-   */
+  /** For fields that nest others (a segmented field's trailing slot). */
   renderFields(
-    fields: FormFieldConfig<T, X>[],
+    fields: NestedFields<T>,
     options?: { inline?: boolean; columns?: number },
   ): ReactNode;
 };
@@ -101,7 +121,7 @@ export type FieldPropsOf<
   K extends string,
   X extends FieldExtras = {},
   T extends FieldValues = FieldValues,
-> = FieldProps<FieldConfigForType<T, K & FormFieldType<X>, X>, T, X>;
+> = FieldProps<WithNestedFields<FieldConfigForType<T, K & FormFieldType<X>, X>, T>, T, X>;
 
 /**
  * Where a field's label is drawn: by the wrapper above the control
@@ -147,7 +167,7 @@ export type GroupProps<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
 > = {
-  config: FormFieldConfigByType<T, X>["group"];
+  config: Omit<GroupField<T>, "fields"> & ExtrasFor<X, "group"> & { fields: NestedFields<T> };
   /** The group's fields, drawn by the builder (inline when the config says so). */
   children: ReactNode;
   style?: CSSProperties;
@@ -172,7 +192,7 @@ export type ArrayProps<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
 > = {
-  config: FormFieldConfigByType<T, X>["array"];
+  config: Omit<ArrayField<T>, "fields"> & ExtrasFor<X, "array"> & { fields: NestedFields<T> };
   id: string;
   rows: ArrayRow[];
   append: () => void;
@@ -213,7 +233,7 @@ export type FormComponents<
 > = {
   fields?: {
     [K in Exclude<FormFieldType<X>, "break" | "group" | "array">]?: FieldEntry<
-      FieldProps<FieldConfigForType<T, K, X>, T, X>
+      FieldProps<WithNestedFields<FieldConfigForType<T, K, X>, T>, T, X>
     >;
   };
   /** Around every field; `null` draws each field bare. */
