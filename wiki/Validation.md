@@ -44,4 +44,6 @@ The package has them in English (`en`) and Persian (`fa`), in `defaultMessages`.
 
 Give `Form` a `resolver` (zod, yup, …) and react-hook-form validates with it; the rules of the configs are then not used. `required` still marks the field. Use a schema when the rules are shared with a server, and the configs when the form is the only place they live.
 
+A project whose forms all use schemas sets `rules: false` in its setup: the configs then only mark the fields (`required` still draws the mark).
+
 `fieldRules(config, options)` returns a config's rules as react-hook-form `validate` functions, and `validationMessage(key, vars, config, options)` one message, for a project that draws fields without the builder.

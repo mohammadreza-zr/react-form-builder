@@ -61,6 +61,12 @@ export interface FormBuilderOptions<X extends FieldExtras = {}>
   components?: FormComponents<FieldValues, X>;
   /** Validation messages over the package's; each may be one text per language. */
   messages?: Partial<ValidationMessages>;
+  /**
+   * Validate by the rules the configs set (`true`, the default). `false`
+   * leaves validation to a schema everywhere: `required` and the limits then
+   * only mark the fields.
+   */
+  rules?: boolean;
 }
 
 const OPTION_KEYS = [
@@ -72,6 +78,7 @@ const OPTION_KEYS = [
   "defaults",
   "localizedKeys",
   "messages",
+  "rules",
   "warn",
 ] as const satisfies readonly (keyof FormBuilderOptions)[];
 
@@ -186,7 +193,7 @@ type ControlledConfig = FieldNode &
     parse?: (value: unknown) => unknown;
   };
 
-type RuleContext = Pick<FormBuilderOptions, "messages" | "locale" | "fallbackLocale">;
+type RuleContext = Pick<FormBuilderOptions, "messages" | "locale" | "fallbackLocale" | "rules">;
 
 const FieldController = memo(function FieldController({
   config,
@@ -198,6 +205,7 @@ const FieldController = memo(function FieldController({
   messages,
   locale,
   fallbackLocale,
+  rules: rulesOn,
 }: RuleContext & {
   config: ControlledConfig;
   control: Control<FieldValues>;
@@ -212,12 +220,13 @@ const FieldController = memo(function FieldController({
   const style = useMemo(() => placeOf(config, columns), [config, columns]);
 
   const rules = useMemo(() => {
+    if (rulesOn === false) return undefined;
     const dayOf =
       config.type === "date"
         ? (value: unknown) => readDayValue(value, config.valueFormat, config.picker)
         : undefined;
     return { validate: fieldRules(config as never, { messages, locale, fallbackLocale, dayOf }) };
-  }, [config, messages, locale, fallbackLocale]);
+  }, [config, messages, locale, fallbackLocale, rulesOn]);
 
   const Component = entry.component;
   const wrapped = entry.wrapper ? Wrapper : null;
@@ -339,9 +348,10 @@ function ArrayController({
   options: FormBuilderOptions<any>;
 }) {
   const id = useFieldId(config.name);
-  const { messages, locale, fallbackLocale, defaults } = options;
+  const { messages, locale, fallbackLocale, defaults, rules: rulesOn } = options;
 
   const rules = useMemo(() => {
+    if (rulesOn === false) return undefined;
     const text = (key: keyof ValidationMessages, vars: Record<string, unknown> = {}) =>
       validationMessage(key, vars, config, { messages, locale, fallbackLocale });
     const custom = config.validate;
@@ -358,7 +368,7 @@ function ArrayController({
         ...(custom && { custom: (rows: unknown, values: Record<string, unknown>) => custom(rows, values) }),
       },
     };
-  }, [config, messages, locale, fallbackLocale]);
+  }, [config, messages, locale, fallbackLocale, rulesOn]);
 
   const { fields: rows, append, remove, move } = useFieldArray({ control, name: config.name, rules: rules as never });
   const { errors } = useFormState({ control, name: config.name });
@@ -509,6 +519,7 @@ export function FormBuilder<T extends FieldValues, X extends FieldExtras = {}>(
         messages={options.messages}
         locale={options.locale}
         fallbackLocale={options.fallbackLocale}
+        rules={options.rules}
       />
     );
   });

@@ -31,6 +31,7 @@ It returns:
 | `components` | The project's components ([Writing components](Components)). Each key is optional: a field type, the wrapper or a layout piece you leave out is drawn by the plain components |
 | `defaults` | Config keys every field of a type starts with (below) |
 | `messages` | Validation messages over the package's ([Validation](Validation)) |
+| `rules` | `false` leaves validation to schemas everywhere; the configs' rules then only mark the fields |
 | `locale`, `fallbackLocale` | The language texts and messages are resolved to ([Access and language](Access-and-Language)) |
 | `can` | Whether the user holds a permission ([Access and language](Access-and-Language)) |
 | `localizedKeys` | Text keys of your own field types to resolve to `locale` too |

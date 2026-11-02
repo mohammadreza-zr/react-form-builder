@@ -127,6 +127,17 @@ describe("Form", () => {
     expect(alerts(el)).toEqual(["Day cannot be before 1405/01/01."]);
   });
 
+  it("leaves validation to a schema with rules: false", async () => {
+    const sent: Values[] = [];
+    const el = await render(
+      <Form<Values> rules={false} fields={[{ type: "text", name: "a", label: "A", required: true }]} onSubmit={(v) => void sent.push(v)} />,
+    );
+    expect(el.textContent).toContain("A *");
+    await submit(el);
+    expect(alerts(el)).toEqual([]);
+    expect(sent).toEqual([{ a: "" }]);
+  });
+
   it("validates a disabled field by none of its rules", async () => {
     const sent: Values[] = [];
     const el = await render(

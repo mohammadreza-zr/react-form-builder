@@ -117,6 +117,7 @@ function FormView<T extends FieldValues, X extends FieldExtras>({
   defaults,
   localizedKeys,
   messages,
+  rules,
   warn,
 }: FormProps<T, X> & { form: UseFormReturn<T> }) {
   const inherited = useFormBuilderOptions<X>();
@@ -139,6 +140,7 @@ function FormView<T extends FieldValues, X extends FieldExtras>({
           defaults={defaults}
           localizedKeys={localizedKeys}
           messages={messages}
+          rules={rules}
           warn={warn}
         />
         {children}

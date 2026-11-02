@@ -19,7 +19,7 @@
 | `resolveComponents` | A project's components over the plain ones, type by type |
 | `fieldLayoutStyle` | The style for a field's `width` and `grow` |
 
-The options are `components`, `can`, `locale`, `fallbackLocale`, `prepare`, `defaults`, `localizedKeys`, `messages` and `warn`.
+The options are `components`, `can`, `locale`, `fallbackLocale`, `prepare`, `defaults`, `localizedKeys`, `messages`, `rules` and `warn`.
 
 ### Form logic
 
