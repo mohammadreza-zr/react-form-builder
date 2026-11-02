@@ -6,6 +6,7 @@ Build React forms from a list of field configs, with react-hook-form. A config s
 
 - **Start:** [Installation](Installation) · [Quick start](Quick-Start) · [Configuration](Configuration)
 - **Guides:** [Field types](Field-Types) · [Validation](Validation) · [Layout](Layout) · [Dependencies](Dependencies) · [Options](Options) · [Field arrays](Field-Arrays) · [Access and language](Access-and-Language) · [Writing components](Components) · [Hooks](Hooks) · [Jalali dates](Jalali-Dates)
+- **Examples:** [`examples/` in the repository](https://github.com/mohammadreza-zr/react-form-builder/tree/main/examples) — every one compiled and run by the tests
 - **Reference:** [API](API-Reference)
 - **Help:** [Troubleshooting](Troubleshooting) · [Contributing](Contributing)
 

@@ -111,4 +111,4 @@ function Text({ config, field, id, describedBy, invalid, disabled, readOnly }: F
 }
 ```
 
-The components live in your project, so they import from wherever your library is.
+The components live in your project, so they import from wherever your library is. A complete shadcn/ui setup (input, select, textarea, checkbox, label, the wrapper and the submit button) is [`examples/shadcn/form-kit.tsx`](https://github.com/mohammadreza-zr/react-form-builder/tree/main/examples/shadcn).

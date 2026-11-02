@@ -56,6 +56,8 @@ export const { Form, FormBuilder, defineFields } = createFormBuilder({
 
 `wrapper` draws every field's label, help and error; each field component draws only its control. A type you give no component to keeps the native one. The keys your components read (`icon`, `max`) become typed keys of the configs.
 
+Working examples — your own `useForm`, zod, languages and permissions, field arrays, loaded options, and a shadcn/ui setup — are in [`examples/`](https://github.com/mohammadreza-zr/react-form-builder/tree/main/examples).
+
 ---
 
 ## What it does
