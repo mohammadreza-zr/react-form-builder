@@ -30,14 +30,24 @@ export type OptionsLoaderContext<T extends FieldValues = FieldValues> = {
   values: WatchSnapshot<T>;
   /** What the user typed into a searchable field; `""` otherwise. */
   search: string;
-  /** Aborted when a newer load starts or the field leaves the form. */
+  /** The page asked for, from 1. It grows only when the component asks for more. */
+  page: number;
+  /** Aborted when no field waits for this load any more. */
   signal: AbortSignal;
 };
 
-/** Loads a field's options: on mount, when an `optionsDeps` field changes, and on search. */
+/** One page of loaded options: `hasMore` lets the component ask for the next. */
+export type OptionsPage = {
+  options: FieldOption[];
+  hasMore?: boolean;
+  /** How many options the server has in all, when it says. */
+  total?: number;
+};
+
+/** Loads a field's options: a list, or one page of them. */
 export type OptionsLoader<T extends FieldValues = FieldValues> = (
   context: OptionsLoaderContext<T>,
-) => Promise<FieldOption[]> | FieldOption[];
+) => Promise<FieldOption[] | OptionsPage> | FieldOption[] | OptionsPage;
 
 /** The keys every field takes. */
 export type BaseField<T extends FieldValues = FieldValues> = {
@@ -99,6 +109,12 @@ export type OptionsSource<T extends FieldValues = FieldValues> = {
   loadOptions?: OptionsLoader<T>;
   /** The fields `loadOptions` reads; a change in one loads again. */
   optionsDeps?: Path<T>[];
+  /** Anything else `loadOptions` reads (an id from the page); a change loads again. */
+  optionsKey?: unknown;
+  /** Load when the field is drawn (`"mount"`, the default), or when the component calls `open`. */
+  loadOn?: "mount" | "open";
+  /** How long a typed search waits for the next keystroke, in ms. Default 250. */
+  searchDelay?: number;
   /** Hold the options' values as numbers. */
   numeric?: boolean;
 };

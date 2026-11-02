@@ -25,15 +25,28 @@ export type RenderFields<
   options?: { inline?: boolean; columns?: number },
 ) => ReactNode;
 
-/** The state of a field's options while they load. */
+/** The state of a field's loaded options, and what the component can ask of them. */
 export type OptionsState = {
+  /** The first page for the current inputs is loading. */
   loading: boolean;
+  /** A further page is loading. */
+  loadingMore: boolean;
   /** What the last load threw; `null` when it did not. */
   error: unknown;
-  /** The text the options were last asked for. */
+  /** The text the user typed. */
   search: string;
-  /** Load the options for a text the user typed (debounced). */
+  /** Load the options for a typed text (after `searchDelay`). */
   setSearch: (text: string) => void;
+  /** The last page said there are more. */
+  hasMore: boolean;
+  /** How many options there are in all, when the loader says. */
+  total?: number;
+  /** Load the next page. Does nothing while one loads or when there is none. */
+  loadMore: () => void;
+  /** Start loading a field with `loadOn: "open"`: call it when the list opens. */
+  open: () => void;
+  /** Load the current inputs again, past the shared answers. */
+  retry: () => void;
 };
 
 /** What the builder hands the component of one field type. */

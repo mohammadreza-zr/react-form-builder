@@ -1,5 +1,7 @@
 import { type KeyboardEvent, useEffect, useState } from "react";
 
+import type { OptionsState } from "../react/adapter.js";
+
 import type { FieldProps } from "../react/adapter.js";
 import type {
   ComboboxField,
@@ -10,10 +12,23 @@ import type {
 } from "../react/config.js";
 import { asText, controlAttributes, usePlainTexts, valueFor } from "./shared.js";
 
+/** A list that is always on screen has no moment to open: load it when drawn. */
+function useOpenNow(state: OptionsState) {
+  const { open } = state;
+  useEffect(() => open(), [open]);
+}
+
 export function PlainSelect(props: FieldProps<SelectField>) {
   const { config, field, options, readOnly, optionsState } = props;
   const t = usePlainTexts();
-  const attributes = { ...controlAttributes(props), readOnly: undefined, "aria-readonly": readOnly || undefined };
+  const attributes = {
+    ...controlAttributes(props),
+    readOnly: undefined,
+    "aria-readonly": readOnly || undefined,
+    "aria-busy": optionsState.loading || undefined,
+    onFocus: optionsState.open,
+    onPointerDown: optionsState.open,
+  };
   const drawn = options.map((option) => (
     <option key={String(option.value)} value={String(option.value)} disabled={option.disabled}>
       {option.label}
@@ -59,6 +74,7 @@ export function PlainSelect(props: FieldProps<SelectField>) {
 /** Radios, one per option, labelled by the wrapper's caption. */
 export function PlainRadio(props: FieldProps<RadioField>) {
   const { config, field, id, disabled, readOnly, required, invalid, options, style } = props;
+  useOpenNow(props.optionsState);
   const current = asText(field.value);
   return (
     <div role="radiogroup" aria-labelledby={config.label ? `${id}-label` : undefined} aria-invalid={invalid || undefined} style={style}>
@@ -91,6 +107,7 @@ export function PlainRadio(props: FieldProps<RadioField>) {
  */
 export function PlainSegmented(props: FieldProps<SegmentedField<any, any>>) {
   const { config, field, id, disabled, readOnly, options, renderFields, style } = props;
+  useOpenNow(props.optionsState);
   const current = asText(field.value);
   const control = options.length ? (
     <div role="radiogroup" aria-labelledby={config.label ? `${id}-label` : undefined}>
@@ -212,6 +229,7 @@ export function PlainCombobox(props: FieldProps<ComboboxField>) {
         list={listId}
         placeholder={config.placeholder}
         value={text}
+        onFocus={optionsState.open}
         onChange={(event) => type(event.target.value)}
         onKeyDown={add}
       />
@@ -221,6 +239,11 @@ export function PlainCombobox(props: FieldProps<ComboboxField>) {
         ))}
       </datalist>
       {text && !optionsState.loading && options.length === 0 ? <small>{config.emptyText ?? t.empty}</small> : null}
+      {optionsState.hasMore ? (
+        <button type="button" onClick={optionsState.loadMore} disabled={optionsState.loadingMore}>
+          {optionsState.loadingMore ? t.loading : t.more}
+        </button>
+      ) : null}
     </span>
   );
 }

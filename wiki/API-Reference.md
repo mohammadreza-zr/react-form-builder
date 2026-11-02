@@ -52,7 +52,7 @@ These are the functions the builder is made of, for tools that need one of them.
 | `FormFieldConfigByType<T, X>`, `FormFieldType<X>`, `FieldConfigForType<T, K, X>`, `BuiltinFieldType` | The configs by type name |
 | `FieldExtras`, `ExtrasOf<F>` | What components add: `{ text: { icon?: string } }`; the extras read from a set of components |
 | `BaseField`, `TextField`, `NumberField`, `SelectField`, `RadioField`, `ComboboxField`, `TagsField`, `ToggleField`, `SliderField`, `ColorField`, `FileField`, `OtpField`, `HiddenField`, `DateField`, `RangeField`, `SegmentedField`, `CustomField`, `ArrayField`, `BreakField`, `GroupField` | The config of each kind of field |
-| `TextFieldType`, `DateFieldType`, `RangeFieldType`, `FieldWidth`, `OptionsSource`, `OptionsLoader`, `OptionsLoaderContext`, `CustomFieldRenderProps` | Their parts |
+| `TextFieldType`, `DateFieldType`, `RangeFieldType`, `FieldWidth`, `OptionsSource`, `OptionsLoader`, `OptionsLoaderContext`, `OptionsPage`, `CustomFieldRenderProps` | Their parts |
 | `FormComponents<T, X>`, `FieldEntry`, `LabelPlacement`, `FieldProps`, `FieldPropsOf<K, X>`, `WrapperProps`, `GroupProps`, `ArrayProps`, `ArrayRow`, `LayoutProps`, `ActionsProps`, `OptionsState`, `RenderFields` | The component contract ([Writing components](Components)) |
 | `FormProps`, `FormBuilderProps`, `FormBuilderOptions`, `FormBuilderConfig`, `UseFormFieldsOptions`, `FormFieldItem` | Props and options |
 | `ValidationMessages`, `ValidateResult`, `FieldRule`, `RuleSource`, `RuleOptions`, `FieldDefaults`, `ValueSource` | Validation and defaults |

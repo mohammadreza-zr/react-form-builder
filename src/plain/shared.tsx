@@ -4,8 +4,8 @@ import { useFormBuilderOptions } from "../react/contexts.js";
 
 /** The words the plain components draw themselves, in the languages the package ships. */
 const TEXTS = {
-  en: { add: "Add", remove: "Remove", up: "Move up", down: "Move down", from: "From", to: "To", empty: "No match", loading: "Loading…" },
-  fa: { add: "افزودن", remove: "حذف", up: "بالا", down: "پایین", from: "از", to: "تا", empty: "موردی پیدا نشد", loading: "در حال بارگذاری…" },
+  en: { add: "Add", remove: "Remove", up: "Move up", down: "Move down", from: "From", to: "To", empty: "No match", loading: "Loading…", more: "Load more" },
+  fa: { add: "افزودن", remove: "حذف", up: "بالا", down: "پایین", from: "از", to: "تا", empty: "موردی پیدا نشد", loading: "در حال بارگذاری…", more: "بیشتر" },
 };
 
 export type PlainTexts = (typeof TEXTS)["en"];

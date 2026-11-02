@@ -10,7 +10,7 @@ First release.
 - Field types: text, password, search, email, tel, url, textarea, number, select, radio, combobox, tags, checkbox, switch, slider, color, file, otp, hidden, date, time, datetime, range-date, range-datetime, segmented, custom, `array` (rows with add, remove, move and row limits), and `break` and `group` for layout. Components add keys to them or types of their own.
 - Validation from the config: `required`, `minLen`/`maxLen`, `min`/`max`, `pattern`, email and URL formats, `otp` length, file `maxSize`, `minDate`/`maxDate`, and `validate`; messages in English and Persian, set per project or per field.
 - Dependencies `visible`, `disabled`, `validate`, `options` and `watch`, with the operators `eq`, `neq`, `in`, `nin`, `gt`, `gte`, `lt`, `lte`, `filled`, `empty`, `truthy` and `falsy`. A field a rule hides goes back to its starting value and is not validated. `resetOn` puts a field back when another changes.
-- Options fixed, narrowed by a dependency, or loaded by `loadOptions` with `optionsDeps` and search; an option's value may be a number.
+- Options fixed, narrowed by a dependency, or loaded by `loadOptions`: with `optionsDeps` and `optionsKey`, search, pages (`hasMore`, `loadMore`), loading on open (`loadOn`), shared answers and retry; an option's value may be a number.
 - Layout: a grid of `columns` with `colSpan`, or `width` and `grow` in a wrapping row; one `wrapper` component draws every field's label, help and error.
 - Access by `permission` (on fields and groups) and `writePermission`, and texts in several languages resolved by `locale`, with `localizedKeys` for a project's own keys.
 - `format` and `parse` convert between the stored value and the control's.

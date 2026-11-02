@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { useForm } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { FieldOption, FormFieldConfig, OptionsLoader } from "../src/index.js";
+import { type FieldOption, type FormFieldConfig, FormBuilder, type OptionsLoader } from "../src/index.js";
 import { type Values, click, mount, select, type, unmount } from "./harness.js";
 
 afterEach(unmount);
@@ -79,6 +81,104 @@ describe("loaded options", () => {
     );
     await select(input(el, "level") as unknown as HTMLSelectElement, "2");
     expect(form.getValues("level")).toBe(2);
+  });
+});
+
+describe("loaded options in pages, on open, and again", () => {
+  it("adds the next page to the list and stops when there are no more", async () => {
+    const pages: number[] = [];
+    const loader: OptionsLoader<Values> = ({ page }) => {
+      pages.push(page);
+      return {
+        options: [
+          { value: `${page}a`, label: `P${page}a` },
+          { value: "same", label: "Same" },
+        ],
+        hasMore: page < 2,
+        total: 3,
+      };
+    };
+    const { el } = await mount([{ type: "combobox", name: "pick", label: "Pick", loadOptions: loader }], { pick: "" });
+    await settle();
+    expect(optionTexts(el.querySelector("datalist")!)).toEqual(["P1a", "Same"]);
+    const more = () => [...el.querySelectorAll("button")].find((button) => button.textContent === "Load more");
+    await click(more()!);
+    await settle();
+    expect(optionTexts(el.querySelector("datalist")!)).toEqual(["P1a", "Same", "P2a"]);
+    expect(pages).toEqual([1, 2]);
+    expect(more()).toBeUndefined();
+  });
+
+  it("waits for the list to open with loadOn: open", async () => {
+    let calls = 0;
+    const loader: OptionsLoader<Values> = () => {
+      calls++;
+      return [{ value: "1", label: "One" }];
+    };
+    const { el } = await mount([{ type: "select", name: "s", label: "S", loadOptions: loader, loadOn: "open" }], { s: "" });
+    await settle();
+    expect(calls).toBe(0);
+    await act(async () => input(el, "s").focus());
+    await settle();
+    expect(calls).toBe(1);
+    expect(optionTexts(input(el, "s"))).toEqual(["", "1"]);
+  });
+
+  it("loads again when optionsKey changes", async () => {
+    const keys: unknown[] = [];
+    const loader: OptionsLoader<Values> = () => {
+      keys.push("load");
+      return [{ value: String(keys.length), label: `L${keys.length}` }];
+    };
+    let setKey!: (key: number) => void;
+    function Page() {
+      const [key, set] = useState(1);
+      setKey = set;
+      const form = useForm<Values>({ defaultValues: { s: "" } });
+      return (
+        <FormBuilder
+          control={form.control}
+          fields={[{ type: "select", name: "s", label: "S", loadOptions: loader, optionsKey: key }]}
+        />
+      );
+    }
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => root.render(<Page />));
+    await settle();
+    expect(optionTexts(host.querySelector("select")!)).toEqual(["", "1"]);
+    await act(async () => setKey(2));
+    await settle();
+    expect(optionTexts(host.querySelector("select")!)).toEqual(["", "2"]);
+    act(() => root.unmount());
+  });
+
+  it("loads again on retry after a failure", async () => {
+    const seen: unknown[] = [];
+    let fail = true;
+    const loader: OptionsLoader<Values> = () => {
+      seen.push("call");
+      if (fail) throw new Error("down");
+      return [{ value: "ok", label: "OK" }];
+    };
+    const states: { retry: () => void; error: unknown }[] = [];
+    const Spy = (props: { optionsState: { retry: () => void; error: unknown } }) => {
+      states.push(props.optionsState);
+      return null;
+    };
+    const fields = (key: number): FormFieldConfig<Values>[] => [
+      { type: "select", name: "s", label: "S", loadOptions: loader, optionsKey: key },
+    ];
+    const first = await mount(fields(1), { s: "" }, { components: { fields: { select: Spy as never } } });
+    await settle();
+    expect((states.at(-1)!.error as Error).message).toBe("down");
+    fail = false;
+    await act(async () => states.at(-1)!.retry());
+    await settle();
+    expect(states.at(-1)!.error).toBeNull();
+    expect(seen).toHaveLength(2);
+    void first;
+
   });
 });
 
