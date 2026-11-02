@@ -115,7 +115,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # The package is ESM-only (a CLI and a config helper), so the CommonJS
+      # The package is ESM-only (React components and plain functions), so the CommonJS
       # resolution that `attw` warns about is ignored; the rest must be green.
       - name: Verify type resolution before publishing
         run: npx --yes @arethetypeswrong/cli --pack . --profile esm-only
