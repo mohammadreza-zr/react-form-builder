@@ -234,3 +234,31 @@ describe("a `disabled` dependency", () => {
     expect(collectDependencyFields([field as never])).toEqual(["pick"]);
   });
 });
+
+describe("numeric operators", () => {
+  it.each([
+    ["an empty string", ""],
+    ["null", null],
+    ["undefined", undefined],
+    ["text that is not a number", "abc"],
+    ["a boolean", false],
+  ])("hold for none of them on %s", (_, value) => {
+    for (const op of ["gt", "gte", "lt", "lte"] as const) {
+      expect(evaluateCondition({ n: value }, { field: "n", op, value: 5 })).toBe(false);
+    }
+  });
+
+  it("compare numbers and numeric text", () => {
+    expect(evaluateCondition({ n: "3" }, { field: "n", op: "lt", value: 5 })).toBe(true);
+    expect(evaluateCondition({ n: 0 }, { field: "n", op: "lte", value: 0 })).toBe(true);
+    expect(evaluateCondition({ n: 7 }, { field: "n", op: "gt", value: "5" })).toBe(true);
+  });
+});
+
+describe("getValueByPath and the prototype", () => {
+  it("reads own keys only", () => {
+    expect(getValueByPath({}, "constructor")).toBeUndefined();
+    expect(getValueByPath({ user: {} }, "user.toString")).toBeUndefined();
+    expect(getValueByPath({ constructor: "x" }, "constructor")).toBe("x");
+  });
+});

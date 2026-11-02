@@ -101,10 +101,13 @@ export function useFormFields<F extends FieldNode, T extends FieldValues = Field
     return snapshot as T;
   }, [watched, watchedValues]);
 
-  const items = useMemo(
-    () =>
-      fields.map((field, index): FormFieldItem<F> & { writes?: ReturnType<typeof resolveFieldState>["writes"] } => {
-        const key = field.name ?? index;
+  const items = useMemo(() => {
+    // Two layouts of one value share a name; the second gets its position too,
+    // so React never sees two children with one key.
+    const used = new Set<string | number>();
+    return fields.map((field, index): FormFieldItem<F> & { writes?: ReturnType<typeof resolveFieldState>["writes"] } => {
+        const key = field.name === undefined || used.has(field.name) ? `${field.name ?? ""}#${index}` : field.name;
+        used.add(key);
 
         if (field.type === "break" || field.type === "group" || !field.dependencies?.length) {
           return { key, field, visible: true, resolved: field };
@@ -123,18 +126,23 @@ export function useFormFields<F extends FieldNode, T extends FieldValues = Field
           // user cannot see is how values get invented behind their back.
           writes: state.visible ? state.writes : undefined,
         };
-      }),
-    [fields, dependencyValues, control],
-  );
+      });
+  }, [fields, dependencyValues, control]);
+
+  const hidden = useMemo(() => collectHiddenNames(items), [items]);
 
   // Writes happen after the render that decided them, never during it:
   // `setValue` notifies the watchers, the resolver runs again, and the second
-  // pass produces nothing because the target now holds the value.
-  const writes = useMemo(() => items.flatMap((item) => item.writes ?? []), [items]);
+  // pass produces nothing because the target now holds the value. A target the
+  // user cannot see — hidden by a rule or denied by access — is not written.
+  const writes = useMemo(() => {
+    const unseen = new Set([...hidden, ...deniedNames]);
+    return items.flatMap((item) => item.writes ?? []).filter((write) => !unseen.has(write.name));
+  }, [items, hidden, deniedNames]);
 
   // Joined into a string so the effect follows the set of names, not the pass
   // that built it.
-  const hiddenNames = useMemo(() => collectHiddenNames(items).join("\n"), [items]);
+  const hiddenNames = hidden.join("\n");
   const deniedKey = deniedNames.join("\n");
   const { defaultValues } = useFormState({ control });
 

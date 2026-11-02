@@ -3,7 +3,7 @@ import { act } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { FormFieldConfig } from "../src/index.js";
-import { type Values, mount, unmount } from "./harness.js";
+import { type Values, mount, type, unmount } from "./harness.js";
 
 afterEach(unmount);
 
@@ -62,5 +62,43 @@ describe("hidden fields", () => {
     expect(el.textContent).toContain("Note");
     expect(el.textContent).toContain("Shared (on)");
     expect(el.textContent).not.toContain("Shared (off)");
+  });
+});
+
+describe("two layouts of one name", () => {
+  it("renders both when both show, without a duplicate-key warning", async () => {
+    const errors: unknown[] = [];
+    const original = console.error;
+    console.error = (...args: unknown[]) => errors.push(args[0]);
+    try {
+      await mount([
+        { type: "text", name: "shared", label: "Shared" },
+        { type: "text", name: "shared", label: "Shared again" },
+      ]);
+    } finally {
+      console.error = original;
+    }
+    expect(errors.filter((message) => String(message).includes("same key"))).toEqual([]);
+  });
+});
+
+describe("a watch write", () => {
+  it("leaves a target that a rule hides", async () => {
+    const { el, form } = await mount(
+      [
+        { type: "checkbox", name: "on" },
+        { type: "text", name: "code", dependencies: [{ kind: "visible", when: { field: "on", op: "truthy" } }] },
+        {
+          type: "text",
+          name: "title",
+          dependencies: [
+            { kind: "watch", when: { field: "title", op: "filled" }, then: { to: "code", from: ({ title }) => `C-${title}` } },
+          ],
+        },
+      ],
+      { on: false, code: "", title: "" },
+    );
+    await type(el.querySelector<HTMLInputElement>('[name="title"]')!, "x");
+    expect(form.getValues("code")).toBe("");
   });
 });

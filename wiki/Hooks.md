@@ -33,6 +33,6 @@ const location = useFieldWatch(control, { watch: ["latitude", "longitude"] });
 |---|---|
 | `watch` | The fields to subscribe to. Defaults to the fields `when` reads |
 | `when` | Conditions that must hold. Defaults to every watched field being `filled` |
-| `select(values)` | Derives what the component receives. Defaults to the values themselves |
+| `select(values)` | Derives what the component receives. Defaults to the values themselves. It runs when a watched value or a condition changes, not on every render, so an inline function is fine |
 
 The result is a new object when a watched field changes, and not on any other render. Do not read `form.watch()` in a parent instead: it puts the whole form on one subscription.

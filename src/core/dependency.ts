@@ -24,7 +24,9 @@ export function getValueByPath(obj: unknown, path: string): unknown {
   // *paths* RHF was asked about, so `"items.0.title"` is a single key there;
   // without this the walk would look for an `items` property, find nothing,
   // and every dependency on an array field would read as `undefined`.
-  if (!Array.isArray(obj) && path in (obj as Record<string, unknown>)) {
+  // Own keys only: `"constructor"` or `"toString"` is a field name, not the
+  // prototype's function.
+  if (!Array.isArray(obj) && Object.hasOwn(obj, path)) {
     return (obj as Record<string, unknown>)[path];
   }
 
@@ -36,12 +38,24 @@ export function getValueByPath(obj: unknown, path: string): unknown {
       return Number.isNaN(index) ? undefined : acc[index];
     }
 
-    if (typeof acc === "object") {
+    if (typeof acc === "object" && Object.hasOwn(acc, key)) {
       return (acc as Record<string, unknown>)[key];
     }
 
     return undefined;
   }, obj);
+}
+
+/**
+ * The two sides of `gt`/`gte`/`lt`/`lte` as numbers, or `null` when either is
+ * not one. An empty field is not `0`: `Number("")` and `Number(null)` are, so
+ * without this a cleared field would be «less than 5».
+ */
+function numericPair(actual: unknown, expected: unknown): [number, number] | null {
+  if (!isFilled(actual) || typeof actual === "boolean") return null;
+  const left = Number(actual);
+  const right = Number(expected);
+  return Number.isFinite(left) && Number.isFinite(right) ? [left, right] : null;
 }
 
 /* ----------------------------------
@@ -97,16 +111,17 @@ export function evaluateCondition<T extends FieldValues>(
         : true;
 
     case "gt":
-      return Number(actual) > Number(condition.value);
-
     case "gte":
-      return Number(actual) >= Number(condition.value);
-
     case "lt":
-      return Number(actual) < Number(condition.value);
-
-    case "lte":
-      return Number(actual) <= Number(condition.value);
+    case "lte": {
+      const pair = numericPair(actual, condition.value);
+      if (!pair) return false;
+      const [left, right] = pair;
+      if (condition.op === "gt") return left > right;
+      if (condition.op === "gte") return left >= right;
+      if (condition.op === "lt") return left < right;
+      return left <= right;
+    }
 
     case "filled":
       return isFilled(actual);

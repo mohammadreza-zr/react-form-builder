@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import type { FieldProps } from "../react/adapter.js";
 import type {
@@ -35,7 +35,7 @@ function Frame({
 }: {
   p: FieldProps<any, any, any>;
   label?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { config, fieldState, id, inline, required } = p;
   return (

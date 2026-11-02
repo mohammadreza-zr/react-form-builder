@@ -1,5 +1,7 @@
 import {
   type ComponentType,
+  Fragment,
+  type ReactNode,
   createContext,
   memo,
   useCallback,
@@ -42,11 +44,11 @@ const FormBuilderOptionsContext = createContext<FormBuilderOptions<never>>({});
 export function FormBuilderProvider<X extends FieldExtras = {}>({
   children,
   ...options
-}: FormBuilderOptions<X> & { children: React.ReactNode }) {
+}: FormBuilderOptions<X> & { children: ReactNode }) {
   return (
-    <FormBuilderOptionsContext value={options as FormBuilderOptions<never>}>
+    <FormBuilderOptionsContext.Provider value={options as FormBuilderOptions<never>}>
       {children}
-    </FormBuilderOptionsContext>
+    </FormBuilderOptionsContext.Provider>
   );
 }
 
@@ -143,7 +145,7 @@ export function FormBuilder<T extends FieldValues, X extends FieldExtras = {}>(
   const renderFields = useCallback<RenderFields<T, X>>(
     (fields, { inline = false } = {}) => {
       const list = <FormBuilder<T, X> control={control} setValue={setValue} fields={fields as never} />;
-      return inline ? <InlineFieldContext value>{list}</InlineFieldContext> : list;
+      return inline ? <InlineFieldContext.Provider value>{list}</InlineFieldContext.Provider> : list;
     },
     [control, setValue],
   );
@@ -168,7 +170,7 @@ export function FormBuilder<T extends FieldValues, X extends FieldExtras = {}>(
               {children}
             </Group>
           ) : (
-            <span key={key}>{children}</span>
+            <Fragment key={key}>{children}</Fragment>
           );
         }
 
@@ -194,12 +196,12 @@ export function FormBuilder<T extends FieldValues, X extends FieldExtras = {}>(
   // Provide the merged options so a group's or a trailing slot's builder
   // below this one reads the same ones, whether they came by props or context.
   const provided = (
-    <FormBuilderOptionsContext value={options as FormBuilderOptions<never>}>
+    <FormBuilderOptionsContext.Provider value={options as FormBuilderOptions<never>}>
       {rendered}
-    </FormBuilderOptionsContext>
+    </FormBuilderOptionsContext.Provider>
   );
 
   // Without a scope of its own the form keeps the one it is nested in.
   if (!idScope) return provided;
-  return <FieldIdScopeContext value={idScope}>{provided}</FieldIdScopeContext>;
+  return <FieldIdScopeContext.Provider value={idScope}>{provided}</FieldIdScopeContext.Provider>;
 }

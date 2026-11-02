@@ -27,7 +27,7 @@ With `locale`, any text can be a string or an object with one text per language:
 { type: "text", name: "name", label: { fa: "نام", en: "Name" } as never }
 ```
 
-The text is taken in `locale`, then in `fallbackLocale` (default: `locale`), then the first language that has one. The texts resolved are `label`, `placeholder`, `hint`, `description`, `startLabel`, `endLabel`, `trailingText`, the `label` of each option, and a group's `title` and `description`. A component always receives plain strings. Without `locale` the texts are left as written.
+The text is taken in `locale`, then in `fallbackLocale` (default: `locale`), then the first language that has one. The texts resolved are `label`, `placeholder`, `hint`, `description`, `startLabel`, `endLabel`, `trailingText`, the `label` of each option, and a group's `title` and `description`. A component receives a plain string for each text written as a string or a `{ language: text }` object; a React element (a `hint` with a link) is passed as written. Without `locale` the texts are left as written.
 
 The config types say `string` for these texts, so an object needs a cast, as above.
 

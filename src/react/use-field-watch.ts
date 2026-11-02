@@ -53,8 +53,24 @@ export function useFieldWatch<T extends FieldValues, R = WatchSnapshot<T>>(
 
   const snapshot = useMemo(() => toWatchSnapshot(names, values), [names, values]);
 
+  // An inline `when` or `select` is new on every render too. Following its
+  // identity would hand the caller a fresh object each render, and an effect
+  // on the result would loop; the conditions are followed by content instead,
+  // and `select` is the one of the render the values changed in.
+  const whenKey = conditionsKey(when);
+
   return useMemo(
     () => resolveWatchRule(snapshot, { watch, when, select }),
-    [snapshot, watch, when, select],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [snapshot, whenKey],
   );
+}
+
+/** The conditions as a comparable key: their JSON, or the object itself when it has none. */
+function conditionsKey(when: unknown): unknown {
+  try {
+    return JSON.stringify(when);
+  } catch {
+    return when;
+  }
 }

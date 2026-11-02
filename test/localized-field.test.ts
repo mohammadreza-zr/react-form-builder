@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 
 import { resolveLocalizedField, resolveLocalizedText } from "../src/core/localized-field.js";
@@ -92,10 +93,32 @@ describe("resolveLocalizedField", () => {
     expect(((out.fields as Record<string, unknown>[])[0]).label).toBe("Title");
   });
 
-  it("leaves a box group's own texts and resolves the fields inside it", () => {
-    const box = { type: "group", variant: "box", title: { en: "Keep" }, fields: [field] } as unknown as FieldNode;
+  it("resolves a group's texts whatever its variant", () => {
+    const box = { type: "group", variant: "box", title: { en: "Box" }, fields: [field] } as unknown as FieldNode;
     const out = resolveLocalizedField(box, "en") as unknown as Record<string, unknown>;
-    expect(out.title).toEqual({ en: "Keep" });
+    expect(out.title).toBe("Box");
     expect(((out.fields as Record<string, unknown>[])[0]).label).toBe("Title");
+  });
+
+  it("leaves a React element as written", () => {
+    const hint = createElement("i", null, "help");
+    const title = createElement("b", null, "Group");
+    const option = createElement("span", null, "One");
+    const out = resolveLocalizedField(
+      { type: "select", name: "a", hint, options: [{ value: "1", label: option }] } as unknown as FieldNode,
+      "en",
+    ) as unknown as Record<string, unknown>;
+    expect(out.hint).toBe(hint);
+    expect((out.options as { label: unknown }[])[0].label).toBe(option);
+    const group = resolveLocalizedField({ type: "group", title, fields: [] } as unknown as FieldNode, "en");
+    expect((group as unknown as Record<string, unknown>).title).toBe(title);
+  });
+
+  it("gives an empty text, not the object, when no language has one", () => {
+    const out = resolveLocalizedField(
+      { type: "select", name: "a", options: [{ value: "1", label: { en: "" } }] } as unknown as FieldNode,
+      "en",
+    ) as unknown as { options: { label: unknown }[] };
+    expect(out.options[0].label).toBe("");
   });
 });

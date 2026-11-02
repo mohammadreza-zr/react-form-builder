@@ -262,7 +262,12 @@ export function formatApiDate(
     return jalali ? formatJalali(jalali, withClock(pattern, null, digits), digits) : str;
   }
 
-  const date = new Date(str);
+  // A bare `YYYY-MM-DD` is a calendar day; `new Date` would read it as UTC
+  // midnight, which is the day before anywhere west of Greenwich.
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+  const date = day
+    ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]))
+    : new Date(str);
   if (Number.isNaN(date.getTime())) return str;
   return formatJalali(toJalali(date), withClock(pattern, date, digits), digits);
 }

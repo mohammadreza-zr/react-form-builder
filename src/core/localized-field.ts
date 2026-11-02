@@ -36,6 +36,23 @@ export function resolveLocalizedText(
   return "";
 }
 
+/**
+ * A text the language decides: a string, or a plain `{ [language]: text }`
+ * object. Anything else — a React element, an array of nodes — is drawn as
+ * written.
+ */
+function isLocalizable(value: unknown): boolean {
+  if (typeof value === "string") return true;
+  if (!value || typeof value !== "object" || Array.isArray(value) || isValidElement(value)) return false;
+  const proto = Object.getPrototypeOf(value) as unknown;
+  return proto === Object.prototype || proto === null;
+}
+
+/** The text in one language, or `value` untouched when it is not a localizable text. */
+function localize(value: unknown, language: string, fallbackLanguage: string): unknown {
+  return isLocalizable(value) ? resolveLocalizedText(value, language, fallbackLanguage) : value;
+}
+
 const TEXT_KEYS = ["label", "placeholder", "hint", "description", "startLabel", "endLabel", "trailingText"] as const;
 
 /**
@@ -53,24 +70,22 @@ export function resolveLocalizedField<F extends FieldNode>(
   const record = field as unknown as Record<string, unknown>;
 
   if (field.type === "group") {
-    const fields = (field.fields ?? []).map((inner) => resolveLocalizedField(inner, language, fallbackLanguage));
-    if (record.variant === "box") return { ...field, fields };
     return {
       ...field,
-      title: resolveLocalizedText(record.title, language, fallbackLanguage) || record.title,
-      description: resolveLocalizedText(record.description, language, fallbackLanguage) || record.description,
-      fields,
+      title: localize(record.title, language, fallbackLanguage),
+      description: localize(record.description, language, fallbackLanguage),
+      fields: (field.fields ?? []).map((inner) => resolveLocalizedField(inner, language, fallbackLanguage)),
     };
   }
 
   const result: Record<string, unknown> = { ...record };
   for (const key of TEXT_KEYS) {
-    if (record[key]) result[key] = resolveLocalizedText(record[key], language, fallbackLanguage);
+    if (record[key]) result[key] = localize(record[key], language, fallbackLanguage);
   }
   if (Array.isArray(field.options)) {
     result.options = field.options.map((option: FieldOption) => ({
       ...option,
-      label: resolveLocalizedText(option.label, language, fallbackLanguage) || option.label,
+      label: localize(option.label, language, fallbackLanguage),
     }));
   }
   return result as F;

@@ -31,4 +31,17 @@ describe("formatApiDate", () => {
   it("drops the clock from a Jalali value, which carries none", () => {
     expect(formatApiDate("1405/07/26", "YYYY/MM/DD HH:mm")).toBe("۱۴۰۵/۰۷/۲۶");
   });
+
+  it("reads a bare day as that calendar day in any time zone", () => {
+    const zone = process.env.TZ;
+    try {
+      for (const tz of ["America/New_York", "Asia/Tehran", "Pacific/Auckland"]) {
+        process.env.TZ = tz;
+        expect(formatApiDate("2026-11-02", "YYYY/MM/DD", "latin")).toBe("1405/08/11");
+      }
+    } finally {
+      if (zone === undefined) delete process.env.TZ;
+      else process.env.TZ = zone;
+    }
+  });
 });
