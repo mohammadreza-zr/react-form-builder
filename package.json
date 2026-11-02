@@ -47,7 +47,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p .",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p .",
     "typecheck": "tsc -p tsconfig.test.json",
     "test": "npm run build && vitest run",
     "docs:sync": "bash scripts/sync-wiki.sh",
