@@ -53,18 +53,29 @@ function localize(value: unknown, language: string, fallbackLanguage: string): u
   return isLocalizable(value) ? resolveLocalizedText(value, language, fallbackLanguage) : value;
 }
 
-const TEXT_KEYS = ["label", "placeholder", "hint", "description", "startLabel", "endLabel", "trailingText"] as const;
+/** The text keys of the package's field types that are resolved to one language. */
+export const LOCALIZED_KEYS = [
+  "label",
+  "placeholder",
+  "hint",
+  "description",
+  "startLabel",
+  "endLabel",
+  "addLabel",
+  "removeLabel",
+  "emptyText",
+] as const;
 
 /**
- * The field with its texts in one language: `label`, `placeholder`, `hint`,
- * `description`, `startLabel`, `endLabel`, `trailingText` and the label of each
- * option. A group keeps its `title` and `description` and its fields are
- * resolved too.
+ * The field with its texts in one language: the `LOCALIZED_KEYS`, the keys in
+ * `extraKeys` (texts an adapter's own field types add), and the label of each
+ * option. A group's `title` and `description` and its fields are resolved too.
  */
 export function resolveLocalizedField<F extends FieldNode>(
   field: F,
   language: string,
   fallbackLanguage: string = language,
+  extraKeys: readonly string[] = [],
 ): F {
   if (!field) return field;
   const record = field as unknown as Record<string, unknown>;
@@ -74,12 +85,12 @@ export function resolveLocalizedField<F extends FieldNode>(
       ...field,
       title: localize(record.title, language, fallbackLanguage),
       description: localize(record.description, language, fallbackLanguage),
-      fields: (field.fields ?? []).map((inner) => resolveLocalizedField(inner, language, fallbackLanguage)),
+      fields: (field.fields ?? []).map((inner) => resolveLocalizedField(inner, language, fallbackLanguage, extraKeys)),
     };
   }
 
   const result: Record<string, unknown> = { ...record };
-  for (const key of TEXT_KEYS) {
+  for (const key of [...LOCALIZED_KEYS, ...extraKeys]) {
     if (record[key]) result[key] = localize(record[key], language, fallbackLanguage);
   }
   if (Array.isArray(field.options)) {

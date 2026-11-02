@@ -1,11 +1,15 @@
 import type { FieldNode } from "./types.js";
 
-/** Every field name a config carries: its own and those nested inside it. */
+/**
+ * Every field name a config carries: its own and those nested inside it. An
+ * array's row fields are named relative to each row, so the array's own name
+ * stands for them.
+ */
 function fieldNames(field: FieldNode) {
   const names: string[] = [];
   if ("name" in field && field.name) names.push(field.name);
   const nested = [
-    ...(field.fields ?? []),
+    ...(field.type === "array" ? [] : (field.fields ?? [])),
     ...(field.trailing ?? []),
   ];
   for (const child of nested) names.push(...fieldNames(child));

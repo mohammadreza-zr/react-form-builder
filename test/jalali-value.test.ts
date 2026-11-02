@@ -4,10 +4,12 @@ import {
   fromDateTime,
   fromJalaliMonthString,
   fromJalaliParts,
+  readDayValue,
   toDateTime,
   toJalaliMonthString,
   toJalaliParts,
   toJalaliString,
+  writeDayValue,
 } from "../src/jalali/index.js";
 
 describe("jalali field values", () => {
@@ -15,13 +17,14 @@ describe("jalali field values", () => {
     expect(toJalaliString({ jy: 1405, jm: 3, jd: 1 })).toBe("1405/03/01");
   });
 
-  it("writes a month as YY/MM, ignoring the day", () => {
-    expect(toJalaliMonthString({ jy: 1407, jm: 11, jd: 23 })).toBe("07/11");
-    expect(toJalaliMonthString({ jy: 1400, jm: 1, jd: 1 })).toBe("00/01");
+  it("writes a month as YYYY/MM, ignoring the day", () => {
+    expect(toJalaliMonthString({ jy: 1407, jm: 11, jd: 23 })).toBe("1407/11");
+    expect(toJalaliMonthString({ jy: 1400, jm: 1, jd: 1 })).toBe("1400/01");
   });
 
-  it("reads YY/MM back as that month's first day in the 1400s", () => {
-    expect(fromJalaliMonthString("07/11")).toBe("1407/11/01");
+  it("reads YYYY/MM back as that month's first day", () => {
+    expect(fromJalaliMonthString("1407/11")).toBe("1407/11/01");
+    expect(fromJalaliMonthString("1407-3")).toBe("1407/03/01");
   });
 
   it("round-trips a month", () => {
@@ -31,10 +34,19 @@ describe("jalali field values", () => {
     );
   });
 
-  it("rejects anything but YY/MM", () => {
-    for (const value of ["", "7/11", "1407/11", "07-11", "07/11/01"]) {
+  it("rejects anything but a year and a month", () => {
+    for (const value of ["", "07/11", "1407/13", "1407/00", "1407/11/01"]) {
       expect(fromJalaliMonthString(value)).toBeNull();
     }
+  });
+
+  it("reads and writes through a codec of the project's", () => {
+    const codec = {
+      read: (value: unknown) => (typeof value === "string" ? `14${value}/01` : null),
+      write: (day: { jy: number; jm: number } | null) => (day ? `${day.jy % 100}/${String(day.jm).padStart(2, "0")}` : ""),
+    };
+    expect(readDayValue("05/03", codec)).toBe("1405/03/01");
+    expect(writeDayValue({ jy: 1405, jm: 3, jd: 9 }, codec)).toBe("5/03");
   });
 
   it("writes a split day as the endpoint's year, month and day", () => {

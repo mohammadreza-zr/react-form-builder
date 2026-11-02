@@ -71,7 +71,7 @@ describe("plain adapter", () => {
     await type(input(el, "count"), "42");
     expect(form.getValues("count")).toBe(42);
     await type(input(el, "count"), "");
-    expect(form.getValues("count")).toBe("");
+    expect(form.getValues("count")).toBeUndefined();
 
     await type(el.querySelector<HTMLTextAreaElement>("textarea")!, "body");
     expect(form.getValues("notes")).toBe("body");
@@ -200,10 +200,10 @@ describe("a date field's value format", () => {
     expect(form.getValues("stamp")).toBeNull();
   });
 
-  it("holds a month as YY/MM", async () => {
-    const { el, form } = await mount([{ type: "date", name: "valid", picker: "month" }], { valid: "05/05" });
-    expect(input(el, "valid").value).toBe("05/05");
-    await type(input(el, "valid"), "06/07");
-    expect(form.getValues("valid")).toBe("06/07");
+  it("holds a month as YYYY/MM", async () => {
+    const { el, form } = await mount([{ type: "date", name: "valid", picker: "month" }], { valid: "1405/05" });
+    expect(input(el, "valid").value).toBe("1405/05");
+    await type(input(el, "valid"), "1406/07");
+    expect(form.getValues("valid")).toBe("1406/07");
   });
 });

@@ -25,6 +25,13 @@ export function collectDependencyFields<T extends FieldValues = FieldValues>(
     // Every dependency kind (visible / disabled / validate / options / watch) reads its
     // fields through `when`, which is one condition or an AND of several. A
     // field can depend on more than one driver, so all of them are subscribed.
+    // `resetOn` compares each pass with the one before: the drivers and the
+    // field itself, which is left alone when it changed in the same pass.
+    if (field.resetOn?.length && field.name) {
+      for (const name of field.resetOn) names.add(name as Path<T>);
+      names.add(field.name as Path<T>);
+    }
+
     for (const dep of field.dependencies ?? []) {
       for (const condition of asConditionList(dep.when)) {
         names.add(condition.field as Path<T>);

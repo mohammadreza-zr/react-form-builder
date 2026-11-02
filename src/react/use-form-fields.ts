@@ -9,13 +9,15 @@ import {
   useWatch,
 } from "react-hook-form";
 
-import { applyResolvedValidation, resolveFieldState } from "../core/dependency.js";
+import { emptyValueOf } from "../core/default-values.js";
+import { applyResolvedValidation, getValueByPath, resolveFieldState } from "../core/dependency.js";
 import { collectDependencyFields } from "../core/dependency-fields.js";
 import { applyFieldAccess } from "../core/field-access.js";
+import { type FieldDefaults, applyFieldDefaults } from "../core/field-defaults.js";
 import { collectDeniedNames, collectHiddenNames } from "../core/hidden-fields.js";
 import { resolveLocalizedField } from "../core/localized-field.js";
 import type { FieldNode } from "../core/types.js";
-import { applyWatchWrites } from "../core/watch-writes.js";
+import { applyWatchWrites, isStructurallyEqual } from "../core/watch-writes.js";
 
 export interface UseFormFieldsOptions<F extends FieldNode, T extends FieldValues> {
   /**
@@ -31,8 +33,12 @@ export interface UseFormFieldsOptions<F extends FieldNode, T extends FieldValues
   locale?: string;
   /** The language used when `locale` has no text. Defaults to `locale`. */
   fallbackLocale?: string;
-  /** Runs on the fields before access and language — add icons, expand shorthands. */
+  /** Runs on the fields first — add icons, expand shorthands. */
   prepare?: (fields: F[]) => F[];
+  /** Config keys every field of a type starts with; see `FieldDefaults`. */
+  defaults?: FieldDefaults;
+  /** Text keys of the adapter's own field types to resolve to `locale` too. */
+  localizedKeys?: readonly string[];
   /** Where the missing-`setValue` message goes. Defaults to `console.warn`. */
   warn?: (message: string) => void;
 }
@@ -71,18 +77,18 @@ export function useFormFields<F extends FieldNode, T extends FieldValues = Field
   inputFields: F[],
   options: UseFormFieldsOptions<F, T> = {},
 ): FormFieldItem<F>[] {
-  const { setValue, can, locale, fallbackLocale, prepare, warn } = options;
+  const { setValue, can, locale, fallbackLocale, prepare, defaults, localizedKeys, warn } = options;
 
   const { fields, deniedNames } = useMemo(() => {
-    const all = prepare ? prepare(inputFields) : inputFields;
+    const all = applyFieldDefaults(prepare ? prepare(inputFields) : inputFields, defaults);
     const allowed = can ? applyFieldAccess(all, can) : all;
     return {
       fields: locale
-        ? allowed.map((f) => resolveLocalizedField(f, locale, fallbackLocale ?? locale))
+        ? allowed.map((f) => resolveLocalizedField(f, locale, fallbackLocale ?? locale, localizedKeys))
         : allowed,
       deniedNames: collectDeniedNames(all, allowed),
     };
-  }, [inputFields, prepare, can, locale, fallbackLocale]);
+  }, [inputFields, prepare, defaults, can, locale, fallbackLocale, localizedKeys]);
 
   const watched = useMemo(() => collectDependencyFields(fields), [fields]);
 
@@ -171,6 +177,26 @@ export function useFormFields<F extends FieldNode, T extends FieldValues = Field
     // reset is not a field leaving the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hiddenNames, setValue]);
+
+  // `resetOn`: compare this pass with the one before. A driver that changed
+  // puts the field back to its starting value, unless the field changed too.
+  const previous = useRef(dependencyValues);
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = dependencyValues;
+    if (before === dependencyValues || !setValue) return;
+    const moved = (name: string) =>
+      !isStructurallyEqual(getValueByPath(before, name), getValueByPath(dependencyValues, name));
+    for (const { field, visible } of items) {
+      const { resetOn, name } = field;
+      if (!visible || !resetOn?.length || !name) continue;
+      if (!resetOn.some(moved) || moved(name)) continue;
+      const start = get(defaultValues, name);
+      setValue(name as Path<T>, (start !== undefined ? start : emptyValueOf(field)) as never, { shouldDirty: true });
+    }
+    // Only a new pass of the watched values starts this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dependencyValues]);
 
   useEffect(() => {
     if (!deniedKey || !setValue) return;

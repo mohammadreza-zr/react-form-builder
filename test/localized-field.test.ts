@@ -74,10 +74,12 @@ describe("resolveLocalizedField", () => {
     expect(JSON.stringify(field)).toBe(copy);
   });
 
-  it("resolves the start and end labels and the trailing text", () => {
-    const slider = { type: "slider", name: "s", startLabel: { en: "Low", fa: "کم" }, endLabel: { en: "High", fa: "زیاد" }, trailingText: { en: "km", fa: "کیلومتر" } } as unknown as FieldNode;
-    const out = resolveLocalizedField(slider, "fa") as unknown as Record<string, string>;
-    expect([out.startLabel, out.endLabel, out.trailingText]).toEqual(["کم", "زیاد", "کیلومتر"]);
+  it("resolves the start and end labels, and the keys an adapter adds", () => {
+    const slider = { type: "slider", name: "s", startLabel: { en: "Low", fa: "کم" }, endLabel: { en: "High", fa: "زیاد" }, unit: { en: "km", fa: "کیلومتر" } } as unknown as FieldNode;
+    const out = resolveLocalizedField(slider, "fa", "fa", ["unit"]) as unknown as Record<string, string>;
+    expect([out.startLabel, out.endLabel, out.unit]).toEqual(["کم", "زیاد", "کیلومتر"]);
+    const plain = resolveLocalizedField(slider, "fa") as unknown as Record<string, unknown>;
+    expect(plain.unit).toEqual({ en: "km", fa: "کیلومتر" });
   });
 
   it("resolves a group's title and description and the fields inside it", () => {

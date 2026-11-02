@@ -211,9 +211,11 @@ export function applyOptionsPatch(
   patch: OptionsPatch,
 ): FieldOption[] {
   if ("set" in patch) return patch.set;
-  if ("keep" in patch)
-    return options.filter((option) => patch.keep.includes(option.value));
-  return options.filter((option) => !patch.remove.includes(option.value));
+  // By text, so `1` and `"1"` name the same option.
+  const has = (values: readonly unknown[], option: FieldOption) =>
+    values.some((value) => String(value) === String(option.value));
+  if ("keep" in patch) return options.filter((option) => has(patch.keep, option));
+  return options.filter((option) => !has(patch.remove, option));
 }
 
 export function applyResolvedValidation<F extends FieldNode>(

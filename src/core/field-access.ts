@@ -14,9 +14,12 @@ export function applyFieldAccess<F extends FieldNode>(
   return fields.flatMap((field): F[] => {
     if (field.type === "break") return [field];
     if (field.type === "group") {
+      if (field.permission && !can(field.permission)) return [];
       const inner = applyFieldAccess(field.fields ?? [], can);
       return inner.length === 0 ? [] : [{ ...field, fields: inner }];
     }
+    // An array's row fields are checked by the builder of each row, which
+    // knows their full names and puts denied ones back to their defaults.
     const { permission, writePermission, ...rest } = field;
     if (permission && !can(permission)) return [];
     const trailing =

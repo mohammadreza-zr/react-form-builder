@@ -26,12 +26,16 @@ A field's `dependencies` list makes it react to the other values of the form. Ea
 | `visible` | The field is in the form only while `when` holds. With several `visible` entries, one holding is enough |
 | `disabled` | The field is disabled while `when` holds; its value is kept |
 | `validate` | While `when` holds, the field takes `then`: `required`, `minLen`, `maxLen`, `min`, `max` |
-| `options` | While `when` holds, `then` changes the field's options: `{ set: [...] }`, `{ keep: [values] }` or `{ remove: [values] }`. Several entries apply in order. `select`, `radio` and `segmented` can have it |
+| `options` | While `when` holds, `then` changes the field's options: `{ set: [...] }`, `{ keep: [values] }` or `{ remove: [values] }`. Several entries apply in order ([Options](Options)) |
 | `watch` | While `when` holds, writes a value into the form (below) |
 
 ## Hidden fields go back to their default
 
-When a `visible` rule takes a field out of the form, its value (and the values of the fields inside it, if it is a group) goes back to the form's `defaultValues`, so a value the user can no longer see is not submitted. It is kept while the field is shown. A name that another shown field still draws is not reset. This needs `setValue`.
+When a `visible` rule takes a field out of the form, its value (and the values of the fields inside it) goes back to the form's starting value, so a value the user can no longer see is not submitted, and it is not validated. It is kept while the field is shown. A name that another shown field still draws is not reset. This needs `setValue`, which `Form` passes itself.
+
+## Going back when another field changes
+
+`resetOn: ["province"]` on a field puts it back to its starting value when the user changes `province`: the city of a province that is no longer chosen. A change of both in one pass, such as a record loaded with `reset`, keeps both.
 
 ## `watch`
 
@@ -53,6 +57,10 @@ When a `visible` rule takes a field out of the form, its value (and the values o
 | `options` | react-hook-form's write options. Default: validate and mark dirty |
 | `reads` (on the dependency) | Other fields `from` reads. The fields `when` tests are always available |
 
-`from` sees only the fields `when` tests and `reads` names, so a derived value is never computed from stale state. Return plain data: a write is skipped when the target already holds a structurally equal value, so a rule that returns a new `Date` every time never settles. A hidden field's `watch` rule does not write.
+`from` sees only the fields `when` tests and `reads` names, so a derived value is never computed from stale state. Return plain data: a write is skipped when the target already holds a structurally equal value, so a rule that returns a new `Date` every time never settles. A hidden field's `watch` rule does not write, and no rule writes into a field that is hidden or denied.
+
+## In an array row
+
+In the fields of an [array](Field-Arrays), `field` names a field of the same row; a name that starts with `/` names a field of the whole form (`{ field: "/currency" }`). `from` receives the row's values by their names in the row.
 
 All of this is subscribed narrowly: the builder watches only the names some dependency reads, so typing in a field nothing depends on re-renders that field only.

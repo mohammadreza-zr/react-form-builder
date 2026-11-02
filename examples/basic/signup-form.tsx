@@ -1,23 +1,20 @@
-import { useForm } from "react-hook-form";
-
-import { FormBuilder, type FormFieldConfig } from "@mrzr/react-form-builder";
-import { plainComponents } from "@mrzr/react-form-builder/plain";
+import { Form, type FormFieldConfig } from "@mrzr/react-form-builder";
 
 export type Values = {
   title: string;
   slug: string;
+  email: string;
   kind: string;
   company: string;
   agree: boolean;
 };
 
 export const fields: FormFieldConfig<Values>[] = [
-  { type: "text", name: "title", label: "Title", required: true, width: 240 },
+  { type: "text", name: "title", label: "Title", required: true },
   {
     type: "text",
     name: "slug",
     label: "Slug",
-    width: 240,
     dependencies: [
       {
         kind: "watch",
@@ -29,12 +26,12 @@ export const fields: FormFieldConfig<Values>[] = [
       },
     ],
   },
-  { type: "break" },
+  { type: "email", name: "email", label: "Email", required: true },
   {
     type: "select",
     name: "kind",
     label: "Kind",
-    width: 240,
+    defaultValue: "person",
     options: [
       { value: "person", label: "Person" },
       { value: "company", label: "Company" },
@@ -44,28 +41,12 @@ export const fields: FormFieldConfig<Values>[] = [
     type: "text",
     name: "company",
     label: "Company",
-    width: 240,
+    required: true,
     dependencies: [{ kind: "visible", when: { field: "kind", op: "eq", value: "company" } }],
   },
-  { type: "checkbox", name: "agree", label: "I agree" },
+  { type: "checkbox", name: "agree", label: "I agree", required: true, colSpan: "full" },
 ];
 
 export function SignupForm({ onSubmit }: { onSubmit: (values: Values) => void }) {
-  const form = useForm<Values>({
-    defaultValues: { title: "", slug: "", kind: "person", company: "", agree: false },
-  });
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <FormBuilder
-          components={plainComponents}
-          control={form.control}
-          setValue={form.setValue}
-          fields={fields}
-        />
-      </div>
-      <button type="submit">Save</button>
-    </form>
-  );
+  return <Form<Values> fields={fields} onSubmit={onSubmit} columns={2} submitLabel="Sign up" />;
 }

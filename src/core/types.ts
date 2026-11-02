@@ -5,10 +5,15 @@ import type { FieldValues, Path } from "react-hook-form";
 /* Shared primitives                  */
 /* ---------------------------------- */
 
+/** The value an option stands for. A field holds it as it is written here. */
+export type OptionValue = string | number;
+
 export type FieldOption = {
-  value: string;
+  value: OptionValue;
   label: string;
-  /** Shown but not selectable (segmented choices). */
+  /** A second line under the label. */
+  description?: string;
+  /** Shown but not selectable. */
   disabled?: boolean;
   icon?: ReactNode;
 };
@@ -131,7 +136,9 @@ export type ValidationPatch = {
  * - `remove` — drop these values.
  */
 export type OptionsPatch =
-  { set: FieldOption[] } | { keep: string[] } | { remove: string[] };
+  | { set: FieldOption[] }
+  | { keep: OptionValue[] }
+  | { remove: OptionValue[] };
 
 export type Dependency<T extends FieldValues = FieldValues> =
   | {
@@ -153,9 +160,9 @@ export type Dependency<T extends FieldValues = FieldValues> =
       then: ValidationPatch;
     }
   /**
-   * Narrow a select/radio/combobox/toggle-group's `options` based on another
-   * field — e.g. only show the cities that belong to the chosen province.
-   * Patches apply in order, so several can compose.
+   * Narrow the `options` of a field that has them, based on another field —
+   * e.g. only show the cities that belong to the chosen province. Patches
+   * apply in order, so several can compose. A field without options ignores it.
    */
   | {
       kind: "options";
@@ -164,8 +171,9 @@ export type Dependency<T extends FieldValues = FieldValues> =
     }
   /**
    * Keep an input's *value* managed by the form instead of by the page around
-   * it: a slug that follows the title, a city that clears when the province
-   * changes, a code filled from a lookup. The field that declares the
+   * it: a slug that follows the title, a code filled from a lookup. (A city
+   * that clears when the province changes is a field's `resetOn`.) The field
+   * that declares the
    * dependency is the one written unless `then.to` names another.
    *
    * Writing needs more than a `control` (react-hook-form's `setValue` lives on
@@ -315,24 +323,6 @@ export type FieldWatchRule<
   select?: (values: WatchSnapshot<T>) => R;
 };
 
-/** Dependencies available to every form-value field. */
-export type FieldDependency<T extends FieldValues = FieldValues> = Exclude<
-  Dependency<T>,
-  { kind: "options" }
->;
-
-/** The field types whose option list can be patched by an options dependency. */
-export type OptionsDependencyFieldType =
-  "select" | "radio" | "combobox" | "toggle-group" | "segmented";
-
-/** What a choice field of this type may depend on: its options only if patchable. */
-export type SelectFieldDependency<
-  T extends FieldValues,
-  TType extends string,
-> = TType extends OptionsDependencyFieldType
-  ? Dependency<T>
-  : FieldDependency<T>;
-
 /* ---------------------------------- */
 /* What the logic reads of a field    */
 /* ---------------------------------- */
@@ -354,8 +344,12 @@ export interface FieldNode {
   min?: number;
   max?: number;
   options?: FieldOption[];
+  /** The fields an options loader reads. */
+  optionsDeps?: string[];
+  /** Fields whose change puts this one back to its starting value. */
+  resetOn?: string[];
   dependencies?: Dependency<FieldValues>[];
-  /** The fields of a `group`. */
+  /** The fields of a `group`, or of each row of an `array`. */
   fields?: FieldNode[];
   /** Fields drawn inside another field. */
   trailing?: FieldNode[];

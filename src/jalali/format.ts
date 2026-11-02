@@ -228,13 +228,12 @@ export function resolveDateLike(value: DateLike | null | undefined): {
 export { isJalaliLeapYear, jalaliMonthLength };
 
 /**
- * An API date as a table-cell display string.
+ * A date as a Jalali display string, whichever calendar it arrives in.
  *
- * Endpoints mostly speak Gregorian (`format: date-time`), but some answer
- * with the Jalali spelling (`1405/05/05`) as-is, so the two shapes are
- * disambiguated the same way the pickers are: a `T` separator, or a year
- * the Jalali calendar never reaches, marks a Gregorian value; anything
- * else is read as Jalali.
+ * A server usually sends Gregorian (`2026-07-27`, `2026-07-27T09:30:00Z`, a
+ * `Date`), sometimes the Jalali spelling (`1405/05/05`) as-is. A `T`
+ * separator, or a year the Jalali calendar never reaches, marks a Gregorian
+ * value; anything else is read as Jalali.
  *
  * The result always wears the calendar's own spelling — zero-padded,
  * `YYYY/MM/DD`, in Persian digits unless `digits` says `"latin"`. `HH`, `mm` and `ss` add the local

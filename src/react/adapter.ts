@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType, CSSProperties, ReactNode } from "react";
 import type {
   Control,
   ControllerFieldState,
@@ -7,6 +7,7 @@ import type {
   Path,
 } from "react-hook-form";
 
+import type { FieldOption } from "../core/types.js";
 import type {
   FieldExtras,
   FieldConfigForType,
@@ -21,8 +22,19 @@ export type RenderFields<
   X extends FieldExtras = {},
 > = (
   fields: FormFieldConfig<T, X>[],
-  options?: { inline?: boolean },
+  options?: { inline?: boolean; columns?: number },
 ) => ReactNode;
+
+/** The state of a field's options while they load. */
+export type OptionsState = {
+  loading: boolean;
+  /** What the last load threw; `null` when it did not. */
+  error: unknown;
+  /** The text the options were last asked for. */
+  search: string;
+  /** Load the options for a text the user typed (debounced). */
+  setSearch: (text: string) => void;
+};
 
 /** What the builder hands the component of one field type. */
 export type FieldProps<
@@ -30,9 +42,9 @@ export type FieldProps<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
 > = {
-  /** The resolved config: dependencies, access and language already applied. */
+  /** The resolved config: defaults, dependencies, access and language applied. */
   config: C;
-  /** react-hook-form's binding of the field. */
+  /** react-hook-form's binding of the field, through the config's `format`/`parse`. */
   field: ControllerRenderProps<T, Path<T>>;
   fieldState: ControllerFieldState;
   /**
@@ -42,11 +54,20 @@ export type FieldProps<
   control: Control<T>;
   /** The element id, with the form's `idScope`. */
   id: string;
+  /** The ids of the description and the error, for `aria-describedby`. */
+  describedBy?: string;
   /** `true` when drawn inside another field's box. */
   inline: boolean;
-  /** The config's `disabled` or the form's. */
+  /** The config's `disabled`, a dependency's, or a missing write permission. */
   disabled: boolean;
+  readOnly: boolean;
   required: boolean;
+  invalid: boolean;
+  /** The options after dependencies and loading; `[]` for a field without them. */
+  options: FieldOption[];
+  optionsState: OptionsState;
+  /** The field's place in the layout; set only when no wrapper draws it. */
+  style?: CSSProperties;
   /**
    * For fields that nest others (a segmented field's trailing slot). Declared
    * as a method so a component written for one set of extras can be placed in
@@ -54,7 +75,7 @@ export type FieldProps<
    */
   renderFields(
     fields: FormFieldConfig<T, X>[],
-    options?: { inline?: boolean },
+    options?: { inline?: boolean; columns?: number },
   ): ReactNode;
 };
 
@@ -69,6 +90,46 @@ export type FieldPropsOf<
   T extends FieldValues = FieldValues,
 > = FieldProps<FieldConfigForType<T, K & FormFieldType<X>, X>, T, X>;
 
+/**
+ * Where a field's label is drawn: by the wrapper above the control
+ * (`"wrapper"`), by the wrapper as the caption of a group of controls that
+ * point to it with `aria-labelledby={id + "-label"}` (`"group"`), by the
+ * control itself, as a checkbox does (`"control"`), or nowhere (`"none"`).
+ */
+export type LabelPlacement = "wrapper" | "group" | "control" | "none";
+
+/**
+ * A field type's component. The object form says where its label goes, and
+ * `wrapper: false` draws the component without the wrapper.
+ */
+export type FieldEntry<P> =
+  | ComponentType<P>
+  | { component: ComponentType<P>; label?: LabelPlacement; wrapper?: boolean };
+
+/** What the wrapper around every field receives: the one place for label, help and error. */
+export type WrapperProps = {
+  /** The resolved config. */
+  config: {
+    type: string;
+    name?: string;
+    label?: string;
+    description?: string;
+    hint?: ReactNode;
+    className?: string;
+  };
+  id: string;
+  label: LabelPlacement;
+  required: boolean;
+  disabled: boolean;
+  invalid: boolean;
+  /** The error message to show. */
+  error?: string;
+  inline: boolean;
+  /** The field's place in the layout: width, grow, or grid span. */
+  style?: CSSProperties;
+  children: ReactNode;
+};
+
 export type GroupProps<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
@@ -76,22 +137,79 @@ export type GroupProps<
   config: FormFieldConfigByType<T, X>["group"];
   /** The group's fields, drawn by the builder (inline when the config says so). */
   children: ReactNode;
+  style?: CSSProperties;
+};
+
+/** One row of an array field. */
+export type ArrayRow = {
+  /** A stable key for the row. */
+  key: string;
+  index: number;
+  /** The row's fields, drawn. */
+  children: ReactNode;
+  remove: () => void;
+  canRemove: boolean;
+  /** Present when the array is `sortable` and the row can move that way. */
+  moveUp?: () => void;
+  moveDown?: () => void;
+};
+
+/** What the component of an `array` field receives. */
+export type ArrayProps<
+  T extends FieldValues = FieldValues,
+  X extends FieldExtras = {},
+> = {
+  config: FormFieldConfigByType<T, X>["array"];
+  id: string;
+  rows: ArrayRow[];
+  append: () => void;
+  canAppend: boolean;
+  disabled: boolean;
+  required: boolean;
+  /** The error of the list itself (`minRows`, `maxRows`). */
+  error?: string;
+  style?: CSSProperties;
+};
+
+/** The container of a list of fields: a form, a group's body, an array row. */
+export type LayoutProps = {
+  /** Lay the fields on a grid of this many columns; without it a wrapping row. */
+  columns?: number;
+  inline: boolean;
+  children: ReactNode;
+};
+
+/** The buttons under a `Form`. */
+export type ActionsProps = {
+  submitLabel: string;
+  /** Present when the form shows a reset button. */
+  resetLabel?: string;
+  submitting: boolean;
+  dirty: boolean;
+  onReset: () => void;
 };
 
 /**
- * What a project supplies: one component per field type, plus the layout
- * items. A type without a component draws `fallback`, or nothing.
+ * What a project supplies: one component per field type, plus the wrapper and
+ * the layout pieces. Every key is optional: what is left out is drawn by the
+ * plain components, so a project replaces only what it styles.
  */
 export type FormComponents<
   T extends FieldValues = FieldValues,
   X extends FieldExtras = {},
 > = {
-  fields: {
-    [K in Exclude<FormFieldType<X>, "break" | "group">]?: ComponentType<
+  fields?: {
+    [K in Exclude<FormFieldType<X>, "break" | "group" | "array">]?: FieldEntry<
       FieldProps<FieldConfigForType<T, K, X>, T, X>
     >;
   };
+  /** Around every field; `null` draws each field bare. */
+  wrapper?: ComponentType<WrapperProps> | null;
   group?: ComponentType<GroupProps<T, X>>;
+  array?: ComponentType<ArrayProps<T, X>>;
   break?: ComponentType;
+  layout?: ComponentType<LayoutProps>;
+  actions?: ComponentType<ActionsProps>;
+  /** A type with no component draws this, or nothing. */
   fallback?: ComponentType<{ type: string }>;
 };

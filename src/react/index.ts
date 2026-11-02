@@ -1,7 +1,10 @@
 export * from "./adapter.js";
 export * from "./contexts.js";
+export * from "./create-form-builder.js";
 export * from "./field-layout.js";
 export * from "./form-builder.js";
+export * from "./form.js";
 export * from "./use-form-fields.js";
+export * from "./use-loaded-options.js";
 export type * from "./config.js";
 export * from "./use-field-watch.js";

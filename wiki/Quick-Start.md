@@ -11,6 +11,7 @@ A field is an object with a `type` and a `name`. `FormFieldConfig<Values>` check
 export type Values = {
   title: string;
   slug: string;
+  email: string;
   kind: string;
   company: string;
   agree: boolean;
@@ -19,12 +20,12 @@ export type Values = {
 
 <!-- verbatim: examples/basic/signup-form.tsx -->
 ```tsx
-  { type: "break" },
+  { type: "email", name: "email", label: "Email", required: true },
   {
     type: "select",
     name: "kind",
     label: "Kind",
-    width: 240,
+    defaultValue: "person",
     options: [
       { value: "person", label: "Person" },
       { value: "company", label: "Company" },
@@ -34,43 +35,30 @@ export type Values = {
     type: "text",
     name: "company",
     label: "Company",
-    width: 240,
+    required: true,
     dependencies: [{ kind: "visible", when: { field: "kind", op: "eq", value: "company" } }],
   },
-  { type: "checkbox", name: "agree", label: "I agree" },
+  { type: "checkbox", name: "agree", label: "I agree", required: true, colSpan: "full" },
 ```
 
 - `slug` has a `watch` dependency: while `title` is filled it is set from the title, until the user edits it themselves (`skipIfDirty`).
-- `company` has a `visible` dependency: it is in the form only while `kind` is `company`. When it leaves, it goes back to its default value.
-- `break` ends the row, so `kind` starts a new line.
+- `email` is checked as an email address, and `required` fields must be filled; a `checkbox` that is `required` must be ticked.
+- `kind` starts as `person` (`defaultValue`); every other field starts from the empty value of its type.
+- `company` has a `visible` dependency: it is in the form only while `kind` is `company`. When it leaves, it goes back to its starting value and is not validated.
 
 ## The form
-
-`FormBuilder` takes the form's `control`, and `setValue` for the rules that write. The components come from `plainComponents`. The builder draws the fields without a wrapper, as the fields of a wrapping row, so you give it the container:
 
 <!-- verbatim: examples/basic/signup-form.tsx -->
 ```tsx
 export function SignupForm({ onSubmit }: { onSubmit: (values: Values) => void }) {
-  const form = useForm<Values>({
-    defaultValues: { title: "", slug: "", kind: "person", company: "", agree: false },
-  });
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <FormBuilder
-          components={plainComponents}
-          control={form.control}
-          setValue={form.setValue}
-          fields={fields}
-        />
-      </div>
-      <button type="submit">Save</button>
-    </form>
-  );
+  return <Form<Values> fields={fields} onSubmit={onSubmit} columns={2} submitLabel="Sign up" />;
 }
 ```
 
-Submitting after typing `Hello World` as the title, choosing Company and ticking the box gives `{ title: "Hello World", slug: "hello-world", kind: "company", company: "", agree: true }`.
+`columns={2}` lays the fields on a two-column grid; `colSpan: "full"` puts the checkbox on a row of its own. Submitting empty shows `Title is required.`, `Email is required.` and `I agree is required.` under the fields. Submitting after typing `Hello World` as the title, an email, choosing Company and naming it, and ticking the box calls `onSubmit` with `{ title: "Hello World", slug: "hello-world", email: "…", kind: "company", company: "…", agree: true }`.
 
-To draw the fields with your own components, see [Writing components](Components).
+## Next
+
+- Draw with your own components: [Configuration](Configuration) and [Writing components](Components).
+- Use a form you made with `useForm`: pass it as `form`, or draw with `FormBuilder` ([Hooks](Hooks)).
+- Rows of fields, loaded options, and validation: [Field arrays](Field-Arrays), [Options](Options), [Validation](Validation).

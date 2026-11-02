@@ -13,15 +13,17 @@ export function toJalaliString({ jy, jm, jd }: JalaliDate) {
   return `${jy}/${pad(jm)}/${pad(jd)}`;
 }
 
-/** A month field's text — `YY/MM`, as a pass validity is written. */
+/** A month field's text — `YYYY/MM`. */
 export function toJalaliMonthString({ jy, jm }: JalaliDate) {
-  return `${pad(jy % 100)}/${pad(jm)}`;
+  return `${jy}/${pad(jm)}`;
 }
 
-/** `YY/MM` back to the day text of that month's first day, in the 1400s. */
+/** `YYYY/MM` back to the day text of that month's first day, or `null`. */
 export function fromJalaliMonthString(value: string): string | null {
-  const match = /^(\d{2})\/(\d{2})$/.exec(value);
-  return match ? `14${match[1]}/${match[2]}/01` : null;
+  const match = /^(\d{4})[/-](\d{1,2})$/.exec(value.trim());
+  if (!match) return null;
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12 ? `${match[1]}/${pad(month)}/01` : null;
 }
 
 /** A Jalali moment as the `YYYY/MM/DD HH:mm` text a date-time field holds. */
@@ -78,12 +80,23 @@ export function fromDateTime(value: string): string | null {
 /* ---------------------------------- */
 
 /**
- * How a `date` field holds its day: the `YYYY/MM/DD` text, the split
- * `{ year, month, day }`, or that day's midnight as an ISO `date-time`.
+ * A field's own way of holding a day, for a shape the built-in formats do not
+ * cover: `read` gives the `YYYY/MM/DD` day text a value stands for (`null` for
+ * none), `write` the value for a picked day (`null` when cleared).
  */
-export type DayValueFormat = "text" | "parts" | "date-time";
+export type DayValueCodec = {
+  read: (value: unknown) => string | null;
+  write: (day: JalaliDate | null) => unknown;
+};
 
-/** `month` holds a year and month as `YY/MM`; only the `text` format has it. */
+/**
+ * How a `date` field holds its day: the `YYYY/MM/DD` text, the split
+ * `{ year, month, day }`, that day's midnight as an ISO `date-time`, or a
+ * `DayValueCodec` of the project's.
+ */
+export type DayValueFormat = "text" | "parts" | "date-time" | DayValueCodec;
+
+/** `month` holds a year and month as `YYYY/MM`; only the `text` format has it. */
 export type DayPicker = "day" | "month";
 
 /**
@@ -95,6 +108,7 @@ export function readDayValue(
   format: DayValueFormat = "text",
   picker: DayPicker = "day",
 ): string | null {
+  if (typeof format === "object") return format.read(value);
   if (!value) return null;
   if (format === "parts") return fromJalaliParts(value as JalaliParts);
   if (format === "date-time") return fromDateTime(String(value));
@@ -112,6 +126,7 @@ export function writeDayValue(
   format: DayValueFormat = "text",
   picker: DayPicker = "day",
 ): unknown {
+  if (typeof format === "object") return format.write(day);
   if (format === "parts") return day && toJalaliParts(day);
   if (format === "date-time") return day && toDateTime(day);
   if (!day) return "";

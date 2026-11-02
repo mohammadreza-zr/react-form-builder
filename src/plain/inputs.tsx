@@ -1,14 +1,16 @@
-import type { ComponentType, ReactNode } from "react";
-
 import type { FieldProps } from "../react/adapter.js";
 import type {
-  CheckboxField,
   ColorField,
   CustomField,
   DateField,
+  FileField,
+  HiddenField,
+  NumberField,
+  OtpField,
   RangeField,
   SliderField,
   TextField,
+  ToggleField,
 } from "../react/config.js";
 import {
   fromNativeDateTime,
@@ -19,95 +21,63 @@ import {
   toNativeDay,
   writeDayValue,
 } from "../jalali/value.js";
-import { FieldFrame } from "./field-frame.js";
+import { asText, controlAttributes, usePlainTexts } from "./shared.js";
 
-type Any = Record<string, unknown>;
-
-/** `inputProps` go on the element first; what the form owns is set after them. */
-function extra(config: { inputProps?: Any }): Any {
-  return config.inputProps ?? {};
-}
-
-function Frame({
-  p,
-  label,
-  children,
-}: {
-  p: FieldProps<any, any, any>;
-  label?: boolean;
-  children: ReactNode;
-}) {
-  const { config, fieldState, id, inline, required } = p;
+/** text, password, search, email, tel, url */
+export function PlainInput(props: FieldProps<TextField<any, Exclude<TextField["type"], "textarea">>>) {
+  const { config, field } = props;
   return (
-    <FieldFrame
-      config={config as never}
-      id={id}
-      label={label}
-      inline={inline}
-      invalid={fieldState.invalid}
-      error={fieldState.error?.message}
-      required={required}
-    >
-      {children}
-    </FieldFrame>
+    <input
+      {...controlAttributes(props)}
+      type={config.type}
+      placeholder={config.placeholder}
+      minLength={config.minLen}
+      maxLength={config.maxLen}
+      value={asText(field.value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        field.onChange(config.normalize ? config.normalize(text) : text);
+      }}
+    />
   );
 }
 
-/** text, password, search, number */
-export function PlainInput(props: FieldProps<TextField<any, "text" | "password" | "search" | "number">>) {
-  const { config, field, fieldState, id, disabled, required } = props;
-  const isNumber = config.type === "number";
+/** A number, or `undefined` while the box is empty. */
+export function PlainNumber(props: FieldProps<NumberField>) {
+  const { config, field } = props;
   return (
-    <Frame p={props}>
-      <input
-        {...extra(config)}
-        name={field.name}
-        ref={field.ref}
-        id={id}
-        type={config.type}
-        placeholder={config.placeholder}
-        disabled={disabled}
-        required={required}
-        minLength={config.minLen}
-        maxLength={config.maxLen}
-        min={config.min}
-        max={config.max}
-        aria-invalid={fieldState.invalid}
-        value={(field.value as string | number | null | undefined) ?? ""}
-        onBlur={field.onBlur}
-        onChange={(event) => {
-          const text = event.target.value;
-          if (isNumber) return field.onChange(text === "" ? "" : +text);
-          field.onChange(config.normalize ? config.normalize(text) : text);
-        }}
-      />
-    </Frame>
+    <input
+      {...controlAttributes(props)}
+      type="number"
+      inputMode="decimal"
+      placeholder={config.placeholder}
+      min={config.min}
+      max={config.max}
+      step={config.step}
+      value={typeof field.value === "number" && Number.isFinite(field.value) ? field.value : asText(field.value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        field.onChange(text === "" ? undefined : Number(text));
+      }}
+    />
   );
 }
 
 export function PlainTextarea(props: FieldProps<TextField<any, "textarea">>) {
-  const { config, field, fieldState, id, disabled, required } = props;
+  const { config, field } = props;
   return (
-    <Frame p={props}>
-      <textarea
-        {...extra(config)}
-        name={field.name}
-        ref={field.ref}
-        id={id}
-        placeholder={config.placeholder}
-        disabled={disabled}
-        required={required}
-        minLength={config.minLen}
-        maxLength={config.maxLen}
-        aria-invalid={fieldState.invalid}
-        value={(field.value as string | null | undefined) ?? ""}
-        onBlur={field.onBlur}
-        onChange={(event) => {
-          const text = event.target.value;
-          field.onChange(config.normalize ? config.normalize(text) : text);
-        }}
-      />
-    </Frame>
+    <textarea
+      {...controlAttributes(props)}
+      placeholder={config.placeholder}
+      rows={config.rows}
+      minLength={config.minLen}
+      maxLength={config.maxLen}
+      value={asText(field.value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        field.onChange(config.normalize ? config.normalize(text) : text);
+      }}
+    />
   );
 }
 
@@ -116,11 +86,12 @@ const NATIVE_DATE_TYPE = { date: "date", time: "time", datetime: "datetime-local
 /**
  * date, time, datetime — the browser's own pickers. A day is shown in the
  * Gregorian calendar the input speaks and held the way the config says
- * (`valueFormat`), Jalali by default; a time is held as `HH:mm` and a
- * date-time as `YYYY/MM/DD HH:mm`.
+ * (`valueFormat`), Jalali text by default; a time is held as `HH:mm` and a
+ * date-time as `YYYY/MM/DD HH:mm`. A month (`picker: "month"`) is typed as
+ * Jalali `YYYY/MM`.
  */
 export function PlainDate(props: FieldProps<DateField>) {
-  const { config, field, fieldState, id, disabled, required } = props;
+  const { config, field } = props;
   const day = config as DateField<any, "date">;
   const monthly = config.type === "date" && day.picker === "month";
   const format = config.type === "date" ? (day.valueFormat ?? "text") : "text";
@@ -128,43 +99,36 @@ export function PlainDate(props: FieldProps<DateField>) {
 
   const shown =
     config.type === "time"
-      ? ((value as string | null | undefined) ?? "")
+      ? asText(value)
       : config.type === "datetime"
-        ? toNativeDateTime(value as string | null | undefined)
+        ? toNativeDateTime(asText(value))
         : monthly
-          ? ((value as string | null | undefined) ?? "")
+          ? asText(value)
           : toNativeDay(readDayValue(value, format));
 
   const held = (native: string): unknown => {
-    if (config.type === "time") return native;
+    if (config.type === "time" || monthly) return native;
     if (config.type === "datetime") return fromNativeDateTime(native);
-    if (monthly) return native;
     return writeDayValue(fromNativeDay(native), format);
   };
 
   return (
-    <Frame p={props}>
-      <input
-        {...extra(config)}
-        name={field.name}
-        ref={field.ref}
-        id={id}
-        type={monthly ? "text" : NATIVE_DATE_TYPE[config.type]}
-        placeholder={monthly ? "YY/MM" : config.placeholder}
-        disabled={disabled}
-        required={required}
-        aria-invalid={fieldState.invalid}
-        value={shown}
-        onBlur={field.onBlur}
-        onChange={(event) => field.onChange(held(event.target.value))}
-      />
-    </Frame>
+    <input
+      {...controlAttributes(props)}
+      type={monthly ? "text" : NATIVE_DATE_TYPE[config.type]}
+      placeholder={monthly ? "YYYY/MM" : config.placeholder}
+      min={config.type === "date" && !monthly ? toNativeDay(config.minDate) || undefined : undefined}
+      max={config.type === "date" && !monthly ? toNativeDay(config.maxDate) || undefined : undefined}
+      value={shown}
+      onChange={(event) => field.onChange(held(event.target.value))}
+    />
   );
 }
 
 /** range-date, range-datetime — binds `{ from, to }`, Jalali text like the single fields. */
 export function PlainRange(props: FieldProps<RangeField>) {
-  const { config, field, fieldState, id, disabled, required } = props;
+  const { config, field, id, disabled, readOnly, required, invalid, describedBy } = props;
+  const t = usePlainTexts();
   const value = (field.value ?? {}) as { from?: string; to?: string };
   const withTime = config.type === "range-datetime";
   const end = (key: "from" | "to", label: string) => (
@@ -173,112 +137,147 @@ export function PlainRange(props: FieldProps<RangeField>) {
       <input
         id={key === "from" ? id : `${id}-to`}
         name={`${field.name}.${key}`}
+        ref={key === "from" ? field.ref : undefined}
         type={withTime ? "datetime-local" : "date"}
         disabled={disabled}
+        readOnly={readOnly}
         required={required}
-        aria-invalid={fieldState.invalid}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         value={withTime ? toNativeDateTime(value[key]) : toNativeDay(value[key])}
         onBlur={field.onBlur}
         onChange={(event) => {
           const native = event.target.value;
-          const next = withTime
-            ? fromNativeDateTime(native)
-            : ((jalali) => (jalali ? toJalaliString(jalali) : ""))(fromNativeDay(native));
+          const day = fromNativeDay(native);
+          const next = withTime ? fromNativeDateTime(native) : day ? toJalaliString(day) : "";
           field.onChange({ ...value, [key]: next });
         }}
       />
     </label>
   );
   return (
-    <Frame p={props} label={false}>
-      {config.label ? <span>{config.label}</span> : null}
-      {end("from", config.startLabel ?? "From")}
-      {end("to", config.endLabel ?? "To")}
-    </Frame>
+    <div role="group" aria-labelledby={config.label ? `${id}-label` : undefined} style={{ display: "flex", gap: 8, ...props.style }}>
+      {end("from", config.startLabel ?? t.from)}
+      {end("to", config.endLabel ?? t.to)}
+    </div>
   );
 }
 
 export function PlainColor(props: FieldProps<ColorField>) {
-  const { config, field, fieldState, id, disabled } = props;
+  const { config, field } = props;
   return (
-    <Frame p={props}>
-      <input
-        {...extra(config)}
-        name={field.name}
-        ref={field.ref}
-        id={id}
-        type="color"
-        disabled={disabled}
-        aria-invalid={fieldState.invalid}
-        value={(field.value as string) || config.fallback || "#000000"}
-        onBlur={field.onBlur}
-        onChange={(event) => field.onChange(event.target.value)}
-      />
-    </Frame>
+    <input
+      {...controlAttributes(props)}
+      type="color"
+      value={asText(field.value) || config.fallback || "#000000"}
+      onChange={(event) => field.onChange(event.target.value)}
+    />
   );
 }
 
 export function PlainSlider(props: FieldProps<SliderField>) {
-  const { config, field, fieldState, id, disabled } = props;
+  const { config, field, id } = props;
   const value = typeof field.value === "number" ? field.value : (config.min ?? 0);
   return (
-    <Frame p={props}>
+    <span style={{ display: "flex", gap: 8, ...props.style }}>
       <input
-        {...extra(config)}
-        name={field.name}
-        ref={field.ref}
-        id={id}
+        {...controlAttributes(props)}
+        style={undefined}
         type="range"
         min={config.min}
         max={config.max}
         step={config.step}
-        disabled={disabled}
-        aria-invalid={fieldState.invalid}
         value={value}
-        onBlur={field.onBlur}
-        onChange={(event) => field.onChange(+event.target.value)}
+        onChange={(event) => field.onChange(Number(event.target.value))}
       />
       {config.showValue ? <output htmlFor={id}>{value}</output> : null}
-    </Frame>
+    </span>
   );
 }
 
-/** A checkbox draws its own label, after the box. */
-export function PlainCheckbox(props: FieldProps<CheckboxField>) {
-  const { config, field, fieldState, id, disabled, required } = props;
+/** A checkbox or a switch, with its label after the box. */
+export function PlainToggle(props: FieldProps<ToggleField>) {
+  const { config, field, id, required, readOnly } = props;
   return (
-    <Frame p={props} label={false}>
-      <span style={{ display: "flex", gap: 4 }}>
-        <input
-          {...extra(config)}
-          name={field.name}
-          ref={field.ref}
-          id={id}
-          type="checkbox"
-          disabled={disabled}
-          aria-invalid={fieldState.invalid}
-          checked={field.value === true}
-          onBlur={field.onBlur}
-          onChange={(event) => field.onChange(event.target.checked)}
-        />
-        {config.label ? (
-          <label htmlFor={id}>
-            {config.label}
-            {required ? <span aria-hidden="true"> *</span> : null}
-          </label>
-        ) : null}
-      </span>
-    </Frame>
+    <span style={{ display: "flex", alignItems: "center", gap: 4, ...props.style }}>
+      <input
+        {...controlAttributes(props)}
+        style={undefined}
+        type="checkbox"
+        role={config.type === "switch" ? "switch" : undefined}
+        aria-readonly={readOnly || undefined}
+        checked={field.value === true}
+        onChange={(event) => {
+          if (!readOnly) field.onChange(event.target.checked);
+        }}
+      />
+      {config.label ? (
+        <label htmlFor={id}>
+          {config.label}
+          {required ? <span aria-hidden="true"> *</span> : null}
+        </label>
+      ) : null}
+    </span>
   );
+}
+
+/** A `File`, or a list with `multiple`; the chosen names are listed under the input. */
+export function PlainFile(props: FieldProps<FileField>) {
+  const { config, field } = props;
+  const files = (Array.isArray(field.value) ? field.value : field.value ? [field.value] : []) as File[];
+  const { readOnly, ...attributes } = controlAttributes(props);
+  return (
+    <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <input
+        {...attributes}
+        disabled={attributes.disabled || readOnly}
+        type="file"
+        accept={config.accept}
+        multiple={config.multiple}
+        onChange={(event) => {
+          const chosen = [...(event.target.files ?? [])];
+          field.onChange(config.multiple ? chosen : (chosen[0] ?? null));
+        }}
+      />
+      {files.length ? (
+        <ul data-slot="file-list">
+          {files.map((file, index) => (
+            <li key={`${file.name}-${index}`}>{file.name}</li>
+          ))}
+        </ul>
+      ) : null}
+    </span>
+  );
+}
+
+/** A one-time code in one box; digits only unless `numeric` is `false`. */
+export function PlainOtp(props: FieldProps<OtpField>) {
+  const { config, field } = props;
+  const numeric = config.numeric !== false;
+  return (
+    <input
+      {...controlAttributes(props)}
+      type="text"
+      inputMode={numeric ? "numeric" : "text"}
+      autoComplete="one-time-code"
+      maxLength={config.length}
+      placeholder={config.placeholder}
+      value={asText(field.value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        field.onChange(numeric ? text.replace(/\D/g, "") : text);
+      }}
+    />
+  );
+}
+
+/** A value submitted with the form, not drawn. */
+export function PlainHidden(props: FieldProps<HiddenField>) {
+  const { field } = props;
+  return <input type="hidden" name={field.name} value={asText(field.value)} />;
 }
 
 export function PlainCustom(props: FieldProps<CustomField>) {
-  const { config, field, fieldState, disabled, required } = props;
-  return (
-    <Frame p={props}>
-      {config.render({ field, fieldState, label: config.label, required, disabled })}
-    </Frame>
-  );
+  const { config, field, fieldState, id, disabled, readOnly, required } = props;
+  return <>{config.render({ field, fieldState, id, label: config.label, required, disabled, readOnly })}</>;
 }
-
-export type PlainComponent = ComponentType<any>;

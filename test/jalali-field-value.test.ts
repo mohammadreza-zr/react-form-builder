@@ -32,9 +32,9 @@ describe("a date field's value", () => {
     expect(readDayValue("2026-08-12T00:00:00Z", "date-time")).toBe("1405/05/21");
   });
 
-  it("holds a month as YY/MM", () => {
-    expect(writeDayValue(day, "text", "month")).toBe("05/05");
-    expect(readDayValue("05/05", "text", "month")).toBe("1405/05/01");
+  it("holds a month as YYYY/MM", () => {
+    expect(writeDayValue(day, "text", "month")).toBe("1405/05");
+    expect(readDayValue("1405/05", "text", "month")).toBe("1405/05/01");
   });
 });
 

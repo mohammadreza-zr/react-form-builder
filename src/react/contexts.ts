@@ -1,5 +1,8 @@
 import { createContext, useContext } from "react";
 
+import type { FieldExtras } from "./config.js";
+import type { FormBuilderOptions } from "./form-builder.js";
+
 /**
  * Set by a `FormBuilder` given an `idScope`: the prefix its fields put before
  * their element ids. Two forms with the same field names on one page would
@@ -23,4 +26,12 @@ export const InlineFieldContext = createContext(false);
 
 export function useInlineField(): boolean {
   return useContext(InlineFieldContext);
+}
+
+/** The options of the nearest `FormBuilderProvider` or `FormBuilder`. */
+export const FormBuilderOptionsContext = createContext<FormBuilderOptions<never>>({});
+
+/** The options set by the nearest `FormBuilderProvider` or `FormBuilder`. */
+export function useFormBuilderOptions<X extends FieldExtras = {}>(): FormBuilderOptions<X> {
+  return useContext(FormBuilderOptionsContext) as unknown as FormBuilderOptions<X>;
 }

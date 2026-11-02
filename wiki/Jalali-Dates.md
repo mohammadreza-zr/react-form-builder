@@ -11,8 +11,17 @@
 | `"text"` (default) | `"1405/05/21"` | `""` |
 | `"parts"` | `{ year: 1405, month: 5, day: 21 }` | `null` |
 | `"date-time"` | `"2026-08-12T00:00:00Z"`, that day's midnight | `null` |
+| `{ read, write }` | Your own shape: `read(value)` gives the day text, `write(day)` the value | what `write(null)` gives |
 
-With `picker: "month"` a `text` field holds a year and month as `"05/05"` (`YY/MM`). A `datetime` field holds `"1405/05/21 09:30"`, a `range-date` field `{ from, to }` of day texts.
+With `picker: "month"` a `text` field holds a year and month as `"1405/05"` (`YYYY/MM`). A shape the formats do not cover, such as a two-digit year, is a `DayValueCodec`:
+
+```tsx
+const shortMonth: DayValueCodec = {
+  read: (value) => (typeof value === "string" && value ? `14${value}/01` : null),
+  write: (day) => (day ? `${String(day.jy % 100).padStart(2, "0")}/${String(day.jm).padStart(2, "0")}` : ""),
+};
+{ type: "date", name: "valid", valueFormat: shortMonth }
+``` A `datetime` field holds `"1405/05/21 09:30"`, a `range-date` field `{ from, to }` of day texts.
 
 `readDayValue(value, format, picker)` gives the day text a value stands for (`null` for none), and `writeDayValue(day, format, picker)` gives the value for a picked `JalaliDate`. A component that draws a Jalali picker calls these two.
 
@@ -28,7 +37,7 @@ With `picker: "month"` a `text` field holds a year and month as `"05/05"` (`YY/M
 | `addJalaliDays`, `addJalaliMonths`, `compareJalali`, `isSameJalaliDay`, `jalaliToday`, `firstWeekdayOfMonth` | Arithmetic |
 | `formatJalali(day, pattern, digits)` | Tokens `YYYY YY MMMM MM M DD D dddd`. `digits` is `"persian"` (default) or `"latin"` |
 | `formatJalaliLong(day, digits)` | `چهارشنبه ۲۱ مرداد ۱۴۰۵` |
-| `formatApiDate(value, pattern, digits)` | A Gregorian `date-time` or a Jalali text from an API as one display string; `HH`, `mm`, `ss` add the clock |
+| `formatApiDate(value, pattern, digits)` | A Gregorian date (`2026-07-27`, a `date-time`, a `Date`) or a Jalali text as one Jalali display string; `HH`, `mm`, `ss` add the clock. A bare day is that calendar day in any time zone |
 | `toPersianDigits`, `toLatinDigits` | Digit conversion |
 | `toDateTime`, `fromDateTime`, `toJalaliParts`, `fromJalaliParts`, `toJalaliString`, `toJalaliMonthString`, `fromJalaliMonthString`, `toJalaliDateTimeString` | The pieces `readDayValue` and `writeDayValue` are made of |
 
