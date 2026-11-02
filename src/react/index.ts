@@ -1,5 +1,6 @@
 export * from "./adapter.js";
 export * from "./contexts.js";
+export * from "./control-config.js";
 export * from "./create-form-builder.js";
 export * from "./field-layout.js";
 export * from "./form-builder.js";

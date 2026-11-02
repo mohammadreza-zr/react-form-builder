@@ -17,6 +17,7 @@
 | `useFieldId`, `FieldIdScopeContext` | The element id of a field name within the form's `idScope` |
 | `useInlineField`, `InlineFieldContext` | Whether a field is drawn inside another field's box |
 | `resolveComponents` | A project's components over the plain ones, type by type |
+| `configForControl`, `BUILDER_KEYS` | A config without the keys the builder owns, for a component that spreads the rest onto its control; type `ControlConfig` |
 | `fieldLayoutStyle` | The style for a field's `width` and `grow` |
 
 The options are `components`, `can`, `locale`, `fallbackLocale`, `prepare`, `defaults`, `localizedKeys`, `messages`, `rules` and `warn`.

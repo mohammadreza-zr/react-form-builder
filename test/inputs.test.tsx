@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { FormFieldConfig } from "../src/index.js";
+import { type FormFieldConfig, configForControl } from "../src/index.js";
 import { type Values, click, mount, select, type, unmount } from "./harness.js";
 
 afterEach(unmount);
@@ -205,5 +205,22 @@ describe("a date field's value format", () => {
     expect(input(el, "valid").value).toBe("1405/05");
     await type(input(el, "valid"), "1406/07");
     expect(form.getValues("valid")).toBe("1406/07");
+  });
+});
+
+describe("configForControl", () => {
+  it("keeps what a control draws and drops what the builder owns", () => {
+    const rest = configForControl({
+      type: "text",
+      name: "a",
+      label: "A",
+      placeholder: "…",
+      required: true,
+      icon: "x",
+      validate: () => true,
+      width: 200,
+      dependencies: [],
+    });
+    expect(rest).toEqual({ label: "A", placeholder: "…", required: true, icon: "x" });
   });
 });

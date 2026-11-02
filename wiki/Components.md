@@ -50,6 +50,8 @@ Help text gets the id `<id>-description` and the error `<id>-error`; the control
 
 The builder wraps the component in a `Controller` and memoises it: a field whose config does not change does not re-render when another field changes.
 
+A component that spreads its config onto a control spreads `configForControl(config)`: the config without the keys the builder owns (`name`, the rules, the dependencies, the layout keys, the loader, `format`, …), so none of them reaches the DOM.
+
 ## Where the label goes
 
 A field type's entry is a component, or `{ component, label?, wrapper? }`:
