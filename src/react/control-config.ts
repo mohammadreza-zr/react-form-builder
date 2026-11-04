@@ -32,6 +32,7 @@ export const BUILDER_KEYS = [
   "optionsKey",
   "loadOn",
   "searchDelay",
+  "optionsMaxAge",
   "trailing",
   "fields",
 ] as const;
@@ -45,7 +46,9 @@ export type ControlConfig<C> = Omit<C, (typeof BUILDER_KEYS)[number]>;
  * control. `required`, `disabled` and `readOnly` stay; the props have the
  * resolved ones.
  */
-export function configForControl<C extends object>(config: C): ControlConfig<C> {
+export function configForControl<C extends object>(
+  config: C,
+): ControlConfig<C> {
   const rest = { ...config } as Record<string, unknown>;
   for (const key of BUILDER_KEYS) delete rest[key];
   return rest as ControlConfig<C>;

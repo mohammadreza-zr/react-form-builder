@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `optionsMaxAge` on a field that loads options: how long an answer is kept for fields drawn again. Before, it was kept until the loader's latest 64 pushed it out, so a form left open never saw a change on the server. `0` keeps nothing, for a loader with a cache of its own.
+
 ## 0.1.1
 
 - A component written for its own extras now fits a `FormComponents` whose extras add more field types. The nested lists in a component's props — a group's `fields`, an array's row fields, a segmented field's `trailing`, and what `renderFields` takes — are typed as `NestedFields` (any extras), and a group's or array's config reads only its own entry of the extras. Before, assigning such components to `FormComponents<T, AllExtras>` failed to type-check.

@@ -4,15 +4,26 @@ import { createRoot } from "react-dom/client";
 import { useForm } from "react-hook-form";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { type FieldOption, type FormFieldConfig, FormBuilder, type OptionsLoader } from "../src/index.js";
+import {
+  type FieldOption,
+  type FormFieldConfig,
+  FormBuilder,
+  type OptionsLoader,
+} from "../src/index.js";
 import { type Values, click, mount, select, type, unmount } from "./harness.js";
 
 afterEach(unmount);
 
-const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-const wait = (ms: number) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
-const input = (el: Element, name: string) => el.querySelector<HTMLInputElement>(`[name="${name}"]`)!;
-const optionTexts = (node: Element) => [...node.querySelectorAll("option")].map((option) => option.value || option.textContent);
+const settle = () =>
+  act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+const wait = (ms: number) =>
+  act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
+const input = (el: Element, name: string) =>
+  el.querySelector<HTMLInputElement>(`[name="${name}"]`)!;
+const optionTexts = (node: Element) =>
+  [...node.querySelectorAll("option")].map(
+    (option) => option.value || option.textContent,
+  );
 
 const CITIES: Record<string, FieldOption[]> = {
   teh: [
@@ -31,10 +42,26 @@ describe("loaded options", () => {
     };
     const fields: FormFieldConfig<Values>[] = [
       { type: "text", name: "province", label: "Province" },
-      { type: "select", name: "city", label: "City", loadOptions: loadCities, optionsDeps: ["province"] },
-      { type: "select", name: "city2", label: "City 2", loadOptions: loadCities, optionsDeps: ["province"] },
+      {
+        type: "select",
+        name: "city",
+        label: "City",
+        loadOptions: loadCities,
+        optionsDeps: ["province"],
+      },
+      {
+        type: "select",
+        name: "city2",
+        label: "City 2",
+        loadOptions: loadCities,
+        optionsDeps: ["province"],
+      },
     ];
-    const { el } = await mount(fields, { province: "teh", city: "", city2: "" });
+    const { el } = await mount(fields, {
+      province: "teh",
+      city: "",
+      city2: "",
+    });
     await settle();
     expect(optionTexts(input(el, "city"))).toEqual(["", "1", "2"]);
     expect(optionTexts(input(el, "city2"))).toEqual(["", "1", "2"]);
@@ -52,13 +79,18 @@ describe("loaded options", () => {
       searches.push(search);
       return [{ value: "x", label: `Result for ${search || "nothing"}` }];
     };
-    const { el, form } = await mount([{ type: "combobox", name: "pick", label: "Pick", loadOptions: loader }], { pick: "" });
+    const { el, form } = await mount(
+      [{ type: "combobox", name: "pick", label: "Pick", loadOptions: loader }],
+      { pick: "" },
+    );
     await settle();
     await type(input(el, "pick"), "ab");
     await type(input(el, "pick"), "abc");
     await wait(300);
     expect(searches).toEqual(["", "abc"]);
-    expect(optionTexts(el.querySelector("datalist")!)).toEqual(["Result for abc"]);
+    expect(optionTexts(el.querySelector("datalist")!)).toEqual([
+      "Result for abc",
+    ]);
 
     await type(input(el, "pick"), "Result for abc");
     expect(form.getValues("pick")).toBe("x");
@@ -98,13 +130,23 @@ describe("loaded options in pages, on open, and again", () => {
         total: 3,
       };
     };
-    const { el } = await mount([{ type: "combobox", name: "pick", label: "Pick", loadOptions: loader }], { pick: "" });
+    const { el } = await mount(
+      [{ type: "combobox", name: "pick", label: "Pick", loadOptions: loader }],
+      { pick: "" },
+    );
     await settle();
     expect(optionTexts(el.querySelector("datalist")!)).toEqual(["P1a", "Same"]);
-    const more = () => [...el.querySelectorAll("button")].find((button) => button.textContent === "Load more");
+    const more = () =>
+      [...el.querySelectorAll("button")].find(
+        (button) => button.textContent === "Load more",
+      );
     await click(more()!);
     await settle();
-    expect(optionTexts(el.querySelector("datalist")!)).toEqual(["P1a", "Same", "P2a"]);
+    expect(optionTexts(el.querySelector("datalist")!)).toEqual([
+      "P1a",
+      "Same",
+      "P2a",
+    ]);
     expect(pages).toEqual([1, 2]);
     expect(more()).toBeUndefined();
   });
@@ -115,7 +157,18 @@ describe("loaded options in pages, on open, and again", () => {
       calls++;
       return [{ value: "1", label: "One" }];
     };
-    const { el } = await mount([{ type: "select", name: "s", label: "S", loadOptions: loader, loadOn: "open" }], { s: "" });
+    const { el } = await mount(
+      [
+        {
+          type: "select",
+          name: "s",
+          label: "S",
+          loadOptions: loader,
+          loadOn: "open",
+        },
+      ],
+      { s: "" },
+    );
     await settle();
     expect(calls).toBe(0);
     await act(async () => input(el, "s").focus());
@@ -138,7 +191,15 @@ describe("loaded options in pages, on open, and again", () => {
       return (
         <FormBuilder
           control={form.control}
-          fields={[{ type: "select", name: "s", label: "S", loadOptions: loader, optionsKey: key }]}
+          fields={[
+            {
+              type: "select",
+              name: "s",
+              label: "S",
+              loadOptions: loader,
+              optionsKey: key,
+            },
+          ]}
         />
       );
     }
@@ -162,14 +223,26 @@ describe("loaded options in pages, on open, and again", () => {
       return [{ value: "ok", label: "OK" }];
     };
     const states: { retry: () => void; error: unknown }[] = [];
-    const Spy = (props: { optionsState: { retry: () => void; error: unknown } }) => {
+    const Spy = (props: {
+      optionsState: { retry: () => void; error: unknown };
+    }) => {
       states.push(props.optionsState);
       return null;
     };
     const fields = (key: number): FormFieldConfig<Values>[] => [
-      { type: "select", name: "s", label: "S", loadOptions: loader, optionsKey: key },
+      {
+        type: "select",
+        name: "s",
+        label: "S",
+        loadOptions: loader,
+        optionsKey: key,
+      },
     ];
-    const first = await mount(fields(1), { s: "" }, { components: { fields: { select: Spy as never } } });
+    const first = await mount(
+      fields(1),
+      { s: "" },
+      { components: { fields: { select: Spy as never } } },
+    );
     await settle();
     expect((states.at(-1)!.error as Error).message).toBe("down");
     fail = false;
@@ -178,7 +251,81 @@ describe("loaded options in pages, on open, and again", () => {
     expect(states.at(-1)!.error).toBeNull();
     expect(seen).toHaveLength(2);
     void first;
+  });
+});
 
+describe("how long a loaded answer is kept", () => {
+  /** Draws the field, and draws it again after `show(false)` then `show(true)`. */
+  async function mountToggle(
+    maxAge: number | undefined,
+    loader: OptionsLoader<Values>,
+  ) {
+    let show!: (on: boolean) => void;
+    function Page() {
+      const [on, set] = useState(true);
+      show = set;
+      const form = useForm<Values>({ defaultValues: { s: "" } });
+      return on ? (
+        <FormBuilder
+          control={form.control}
+          fields={[
+            {
+              type: "select",
+              name: "s",
+              label: "S",
+              loadOptions: loader,
+              optionsMaxAge: maxAge,
+            },
+          ]}
+        />
+      ) : null;
+    }
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    await act(async () => root.render(<Page />));
+    await settle();
+    const again = async () => {
+      await act(async () => show(false));
+      await act(async () => show(true));
+      await settle();
+    };
+    return { again, done: () => act(() => root.unmount()) };
+  }
+
+  it("shows the answer it had to a field drawn again, by default", async () => {
+    let calls = 0;
+    const loader: OptionsLoader<Values> = () => [
+      { value: String(++calls), label: "x" },
+    ];
+    const page = await mountToggle(undefined, loader);
+    await page.again();
+    expect(calls).toBe(1);
+    await page.done();
+  });
+
+  it("asks again once the answer is older than optionsMaxAge", async () => {
+    let calls = 0;
+    const loader: OptionsLoader<Values> = () => [
+      { value: String(++calls), label: "x" },
+    ];
+    const page = await mountToggle(40, loader);
+    await page.again();
+    expect(calls).toBe(1);
+    await wait(60);
+    await page.again();
+    expect(calls).toBe(2);
+    await page.done();
+  });
+
+  it("keeps nothing with optionsMaxAge 0", async () => {
+    let calls = 0;
+    const loader: OptionsLoader<Values> = () => [
+      { value: String(++calls), label: "x" },
+    ];
+    const page = await mountToggle(0, loader);
+    await page.again();
+    expect(calls).toBe(2);
+    await page.done();
   });
 });
 
@@ -191,8 +338,20 @@ describe("the new field types", () => {
     const { el, form } = await mount(
       [
         { type: "combobox", name: "one", label: "One", options },
-        { type: "combobox", name: "own", label: "Own", options, creatable: true },
-        { type: "combobox", name: "many", label: "Many", options, multiple: true },
+        {
+          type: "combobox",
+          name: "own",
+          label: "Own",
+          options,
+          creatable: true,
+        },
+        {
+          type: "combobox",
+          name: "many",
+          label: "Many",
+          options,
+          multiple: true,
+        },
       ],
       { one: "", own: "", many: [] },
     );
@@ -203,16 +362,28 @@ describe("the new field types", () => {
 
     const many = input(el, "many");
     await type(many, "Red");
-    await act(async () => many.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    await act(async () =>
+      many.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      ),
+    );
     expect(form.getValues("many")).toEqual(["r"]);
     await click(el.querySelector('[aria-label="Remove Red"]')!);
     expect(form.getValues("many")).toEqual([]);
   });
 
   it("adds tags with Enter and removes the last with Backspace", async () => {
-    const { el, form } = await mount([{ type: "tags", name: "tags", label: "Tags" }], { tags: [] });
+    const { el, form } = await mount(
+      [{ type: "tags", name: "tags", label: "Tags" }],
+      { tags: [] },
+    );
     const box = input(el, "tags");
-    const key = (k: string) => act(async () => box.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })));
+    const key = (k: string) =>
+      act(async () =>
+        box.dispatchEvent(
+          new KeyboardEvent("keydown", { key: k, bubbles: true }),
+        ),
+      );
     await type(box, "one");
     await key("Enter");
     await type(box, "two");
@@ -238,7 +409,9 @@ describe("the new field types", () => {
     const doc = input(el, "doc");
     const file = new File(["x"], "a.txt", { type: "text/plain" });
     Object.defineProperty(doc, "files", { value: [file] });
-    await act(async () => doc.dispatchEvent(new Event("change", { bubbles: true })));
+    await act(async () =>
+      doc.dispatchEvent(new Event("change", { bubbles: true })),
+    );
     expect(form.getValues("doc")).toBe(file);
     expect(el.textContent).toContain("a.txt");
 
@@ -247,7 +420,10 @@ describe("the new field types", () => {
   });
 
   it("marks a read-only field, which keeps its value", async () => {
-    const { el } = await mount([{ type: "text", name: "id", label: "ID", readOnly: true }], { id: "42" });
+    const { el } = await mount(
+      [{ type: "text", name: "id", label: "ID", readOnly: true }],
+      { id: "42" },
+    );
     expect(input(el, "id").readOnly).toBe(true);
     expect(input(el, "id").value).toBe("42");
   });

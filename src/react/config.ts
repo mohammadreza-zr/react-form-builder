@@ -76,7 +76,10 @@ export type BaseField<T extends FieldValues = FieldValues> = {
   /** A text value must match it. */
   pattern?: RegExp | string;
   /** A rule of the field's own: `true` when the value is fine, else the message. */
-  validate?: (value: unknown, values: T) => ValidateResult | Promise<ValidateResult>;
+  validate?: (
+    value: unknown,
+    values: T,
+  ) => ValidateResult | Promise<ValidateResult>;
   /** This field's own validation messages, over the form's. */
   messages?: Partial<ValidationMessages>;
   dependencies?: Dependency<T>[];
@@ -115,18 +118,20 @@ export type OptionsSource<T extends FieldValues = FieldValues> = {
   loadOn?: "mount" | "open";
   /** How long a typed search waits for the next keystroke, in ms. Default 250. */
   searchDelay?: number;
+  /**
+   * How long a loaded answer is kept for fields that come back, in ms. By default
+   * it is kept until the loader's latest answers push it out; a form open for
+   * days then never sees a change on the server. `0` keeps nothing: every field
+   * that is drawn asks the loader again, which suits a loader that has a cache
+   * of its own (a query client's).
+   */
+  optionsMaxAge?: number;
   /** Hold the options' values as numbers. */
   numeric?: boolean;
 };
 
 export type TextFieldType =
-  | "text"
-  | "password"
-  | "search"
-  | "email"
-  | "tel"
-  | "url"
-  | "textarea";
+  "text" | "password" | "search" | "email" | "tel" | "url" | "textarea";
 
 export type TextField<
   T extends FieldValues = FieldValues,
@@ -327,10 +332,7 @@ export type GroupField<
   fields: FormFieldConfig<T, X>[];
 };
 
-type BuiltinConfig<
-  T extends FieldValues,
-  X extends FieldExtras,
-> = {
+type BuiltinConfig<T extends FieldValues, X extends FieldExtras> = {
   text: TextField<T, "text">;
   password: TextField<T, "password">;
   search: TextField<T, "search">;
@@ -373,7 +375,9 @@ export type FormFieldConfigByType<
   [K in BuiltinFieldType]: BuiltinConfig<T, X>[K] &
     (K extends keyof X ? X[K] : unknown);
 } & {
-  [K in Exclude<keyof X & string, BuiltinFieldType>]: BaseField<T> & { type: K } & X[K];
+  [K in Exclude<keyof X & string, BuiltinFieldType>]: BaseField<T> & {
+    type: K;
+  } & X[K];
 };
 
 export type FormFieldType<X extends FieldExtras = {}> =

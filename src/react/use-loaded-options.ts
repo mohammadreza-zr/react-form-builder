@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type Control, type FieldValues, type Path, useWatch } from "react-hook-form";
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useWatch,
+} from "react-hook-form";
 
 import { toWatchSnapshot } from "../core/field-watch.js";
 import type { FieldOption } from "../core/types.js";
@@ -13,7 +18,14 @@ import type { OptionsLoader, OptionsPage } from "./config.js";
  * field waiting on it has gone; a failed or aborted load is forgotten, so the
  * next one retries. Each loader keeps its latest answers only.
  */
-type Entry = { promise: Promise<OptionsPage>; controller: AbortController; users: number; settled: boolean };
+type Entry = {
+  promise: Promise<OptionsPage>;
+  controller: AbortController;
+  users: number;
+  settled: boolean;
+  /** When the load ended; an answer older than `optionsMaxAge` is asked for again. */
+  settledAt: number;
+};
 
 const cache = new WeakMap<OptionsLoader<any>, Map<string, Entry>>();
 
@@ -27,7 +39,10 @@ function toPage(answer: FieldOption[] | OptionsPage): OptionsPage {
 function subscribe(
   loader: OptionsLoader<any>,
   key: string,
-  run: (signal: AbortSignal) => Promise<FieldOption[] | OptionsPage> | FieldOption[] | OptionsPage,
+  run: (
+    signal: AbortSignal,
+  ) => Promise<FieldOption[] | OptionsPage> | FieldOption[] | OptionsPage,
+  maxAge: number = Infinity,
 ): { promise: Promise<OptionsPage>; leave: () => void } {
   let entries = cache.get(loader);
   if (!entries) {
@@ -35,18 +50,30 @@ function subscribe(
     cache.set(loader, entries);
   }
   const map = entries;
+  const expired = (kept: Entry) =>
+    kept.settled && Date.now() - kept.settledAt >= maxAge;
   let entry = map.get(key);
+  // Fields still showing an expired answer keep their promise; a field that
+  // arrives now starts a load of its own.
+  if (entry && expired(entry)) {
+    map.delete(key);
+    entry = undefined;
+  }
   if (!entry) {
     const controller = new AbortController();
     const created: Entry = {
       controller,
       users: 0,
       settled: false,
-      promise: Promise.resolve().then(() => run(controller.signal)).then(toPage),
+      settledAt: 0,
+      promise: Promise.resolve()
+        .then(() => run(controller.signal))
+        .then(toPage),
     };
     created.promise.then(
       () => {
         created.settled = true;
+        created.settledAt = Date.now();
       },
       () => {
         created.settled = true;
@@ -77,7 +104,8 @@ function subscribe(
 function forget(loader: OptionsLoader<any>, prefix: string) {
   const entries = cache.get(loader);
   if (!entries) return;
-  for (const key of [...entries.keys()]) if (key.startsWith(prefix)) entries.delete(key);
+  for (const key of [...entries.keys()])
+    if (key.startsWith(prefix)) entries.delete(key);
 }
 
 function keyOf(value: unknown): string {
@@ -129,9 +157,15 @@ type LoadedConfig<T extends FieldValues> = {
   optionsKey?: unknown;
   loadOn?: "mount" | "open";
   searchDelay?: number;
+  optionsMaxAge?: number;
 };
 
-type Answer = { base: string; key: string; pages: OptionsPage[]; error: unknown };
+type Answer = {
+  base: string;
+  key: string;
+  pages: OptionsPage[];
+  error: unknown;
+};
 
 /**
  * A field's options: its `options`, or what its `loadOptions` gives for the
@@ -142,11 +176,25 @@ export function useLoadedOptions<T extends FieldValues>(
   control: Control<T>,
   config: LoadedConfig<T>,
 ): { options: FieldOption[]; state: OptionsState } {
-  const { loadOptions, optionsDeps, optionsKey, loadOn = "mount", searchDelay = SEARCH_DELAY } = config;
+  const {
+    loadOptions,
+    optionsDeps,
+    optionsKey,
+    loadOn = "mount",
+    searchDelay = SEARCH_DELAY,
+    optionsMaxAge,
+  } = config;
   const hasLoader = Boolean(loadOptions);
   const names = useMemo(() => optionsDeps ?? [], [optionsDeps]);
-  const watched = useWatch({ control, name: names as never, disabled: !hasLoader }) as unknown[] | undefined;
-  const values = useMemo(() => toWatchSnapshot(names, watched), [names, watched]);
+  const watched = useWatch({
+    control,
+    name: names as never,
+    disabled: !hasLoader,
+  }) as unknown[] | undefined;
+  const values = useMemo(
+    () => toWatchSnapshot(names, watched),
+    [names, watched],
+  );
 
   const [typed, setTyped] = useState("");
   const [search, setSearch] = useState("");
@@ -161,13 +209,21 @@ export function useLoadedOptions<T extends FieldValues>(
 
   // `base` is what the list is for; `key` adds the search. A new search keeps
   // showing the last list until its answer comes; new inputs do not.
-  const base = useMemo(() => keyOf([values, optionsKey ?? null]), [values, optionsKey]);
+  const base = useMemo(
+    () => keyOf([values, optionsKey ?? null]),
+    [values, optionsKey],
+  );
   const key = `${base}|${keyOf(search)}`;
 
   const [wanted, setWanted] = useState({ key, pages: 1 });
   const pages = wanted.key === key ? wanted.pages : 1;
 
-  const [answer, setAnswer] = useState<Answer>({ base: "", key: "", pages: [], error: null });
+  const [answer, setAnswer] = useState<Answer>({
+    base: "",
+    key: "",
+    pages: [],
+    error: null,
+  });
 
   const loaderRef = useRef(loadOptions);
   useEffect(() => {
@@ -179,7 +235,12 @@ export function useLoadedOptions<T extends FieldValues>(
     if (!loader || !opened) return;
     let active = true;
     const subscriptions = Array.from({ length: pages }, (_, index) =>
-      subscribe(loader, `${key}#${index + 1}`, (signal) => loader({ values, search, page: index + 1, signal })),
+      subscribe(
+        loader,
+        `${key}#${index + 1}`,
+        (signal) => loader({ values, search, page: index + 1, signal }),
+        optionsMaxAge,
+      ),
     );
     Promise.all(subscriptions.map((subscription) => subscription.promise)).then(
       (loaded) => {
@@ -221,17 +282,33 @@ export function useLoadedOptions<T extends FieldValues>(
         ? {
             loading,
             loadingMore,
-            error: answer.key === key || answer.base === base ? answer.error : null,
+            error:
+              answer.key === key || answer.base === base ? answer.error : null,
             search: typed,
             setSearch: setTyped,
             hasMore,
-            total: last?.total ?? (current ? answer.pages[0]?.total : undefined),
+            total:
+              last?.total ?? (current ? answer.pages[0]?.total : undefined),
             loadMore,
             open,
             retry,
           }
         : IDLE,
-    [hasLoader, loading, loadingMore, answer, key, base, typed, hasMore, last, current, loadMore, open, retry],
+    [
+      hasLoader,
+      loading,
+      loadingMore,
+      answer,
+      key,
+      base,
+      typed,
+      hasMore,
+      last,
+      current,
+      loadMore,
+      open,
+      retry,
+    ],
   );
 
   const options = useMemo(() => {
