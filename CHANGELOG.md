@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2
 
 - `optionsMaxAge` on a field that loads options: how long an answer is kept for fields drawn again. Before, it was kept until the loader's latest 64 pushed it out, so a form left open never saw a change on the server. `0` keeps nothing, for a loader with a cache of its own.
 
