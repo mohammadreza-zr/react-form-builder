@@ -269,12 +269,18 @@ export function useLoadedOptions<T extends FieldValues>(
     setWanted({ key, pages: pages + 1 });
   }, [hasMore, loadingMore, loading, key, pages]);
 
-  const open = useCallback(() => setOpened(true), []);
-
   const retry = useCallback(() => {
     if (loaderRef.current) forget(loaderRef.current, `${key}#`);
     setRetries((count) => count + 1);
   }, [key]);
+
+  // Opening a list whose last load failed asks again, as a user expects.
+  const failed =
+    (answer.key === key || answer.base === base) && answer.error != null;
+  const open = useCallback(() => {
+    setOpened(true);
+    if (failed) retry();
+  }, [failed, retry]);
 
   const state = useMemo<OptionsState>(
     () =>
