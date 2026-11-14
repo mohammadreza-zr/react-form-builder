@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.3
 
 - The operators `includes` and `excludes` for dependencies: the field holds a list that does (not) contain `value`. `in` and `nin` take the other direction, a value in a list the condition names.
 - Opening a field's list after its load failed asks the loader again, as `retry` does. Before, the field stayed empty until its inputs changed or it was drawn again.
