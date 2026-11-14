@@ -95,6 +95,42 @@ describe("evaluateCondition", () => {
   });
 });
 
+describe("includes and excludes", () => {
+  const values: Record<string, unknown> = {
+    tags: ["alpha", "beta"],
+    none: [],
+    text: "beta",
+  };
+
+  it("reads a list that holds the value", () => {
+    expect(
+      evaluateCondition(values, {
+        field: "tags",
+        op: "includes",
+        value: "beta",
+      }),
+    ).toBe(true);
+    expect(
+      evaluateCondition(values, {
+        field: "tags",
+        op: "excludes",
+        value: "beta",
+      }),
+    ).toBe(false);
+  });
+
+  it("reads an empty, missing or non-list field as holding nothing", () => {
+    for (const field of ["none", "missing", "text"]) {
+      expect(
+        evaluateCondition(values, { field, op: "includes", value: "beta" }),
+      ).toBe(false);
+      expect(
+        evaluateCondition(values, { field, op: "excludes", value: "beta" }),
+      ).toBe(true);
+    }
+  });
+});
+
 describe("evaluateConditions", () => {
   it("treats one condition and a one-element list alike", () => {
     const condition: Condition = { field: "a", op: "filled" };

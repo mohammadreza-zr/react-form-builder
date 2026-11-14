@@ -15,6 +15,7 @@ A field's `dependencies` list makes it react to the other values of the form. Ea
 |---|---|
 | `eq`, `neq` | the value is (not) strictly equal to `value` |
 | `in`, `nin` | the value is (not) in the array `value` |
+| `includes`, `excludes` | the value is a list that does (not) contain `value`; `excludes` also holds when the field holds no list |
 | `gt`, `gte`, `lt`, `lte` | the value, read as a number, is greater / less than `value`; an empty field, a boolean or text that is not a number holds none of them |
 | `filled`, `empty` | the field holds a value (`0` and `false` are values; `undefined`, `null`, `""`, blank text, `NaN` and `[]` are not) / does not |
 | `truthy`, `falsy` | the value is truthy / falsy |

@@ -110,6 +110,12 @@ export function evaluateCondition<T extends FieldValues>(
         ? !condition.value.includes(actual)
         : true;
 
+    case "includes":
+      return Array.isArray(actual) && actual.includes(condition.value);
+
+    case "excludes":
+      return !Array.isArray(actual) || !actual.includes(condition.value);
+
     case "gt":
     case "gte":
     case "lt":

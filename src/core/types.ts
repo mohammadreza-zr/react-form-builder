@@ -47,6 +47,18 @@ export type DependencyOperator =
   | "nin"
 
   /**
+   * Includes — true if the field holds a list that contains `value`.
+   * The other way round from `in`: the field is the array here.
+   * Example: fieldValue.includes(value)
+   */
+  | "includes"
+
+  /**
+   * Excludes — the negation of `includes`; also true when the field holds no list.
+   */
+  | "excludes"
+
+  /**
    * Greater than — true if the field value is greater than the provided value.
    * Works with numbers or comparable values.
    * Example: fieldValue > value
